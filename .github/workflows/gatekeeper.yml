@@ -1,0 +1,61 @@
+name: Traffic Light Gatekeeper
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write # Needed for the Bot to comment
+  contents: read
+
+jobs:
+  # Job 1: Run Tests (The CI Part)
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: |
+          pip install pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Run Tests & Generate Report
+        # Important: generate JUnit XML for the bot to read
+        run: pytest --junitxml=test-results.xml || true 
+        # "|| true" ensures the job doesn't crash here; we want the bot to handle the failure logic.
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+
+  # Job 2: The Traffic Light Bot (The MLOps Part)
+  gatekeeper-bot:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download Test Report
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          path: .
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Bot Dependencies
+        run: pip install PyGithub junitparser
+
+      - name: Run Gatekeeper Logic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python scripts/gatekeeper.py
