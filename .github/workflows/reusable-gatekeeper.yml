@@ -1,5 +1,31 @@
 name: Reusable Traffic Light Gatekeeper Workflow
 
+# ==============================================================================
+# 🚦 REUSABLE TRAFFIC LIGHT GATEKEEPER WORKFLOW
+# Full documentation: .github/workflows/README.md
+#
+# USAGE INSIDE ORGANIZATION (skunchoor):
+# Organization secrets are shared automatically. Use `secrets: inherit`:
+# jobs:
+#   gatekeeper:
+#     uses: skunchoor/traffic-light-governance/.github/workflows/reusable-gatekeeper.yml@main
+#     with:
+#       python_version: '3.11'
+#       run_security_scans: true
+#     secrets: inherit
+#
+# USAGE OUTSIDE ORGANIZATION / EXTERNAL REPOSITORIES:
+# Pass repository secrets explicitly or via `secrets: inherit`:
+# jobs:
+#   gatekeeper:
+#     uses: skunchoor/traffic-light-governance/.github/workflows/reusable-gatekeeper.yml@v1.0.0
+#     with:
+#       python_version: '3.11'
+#     secrets:
+#       BACKEND_API_URL: ${{ secrets.BACKEND_API_URL }}
+#       BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+# ==============================================================================
+
 on:
   workflow_call:
     inputs:

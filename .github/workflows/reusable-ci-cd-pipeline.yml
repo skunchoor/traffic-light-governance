@@ -1,5 +1,32 @@
 name: Reusable Unified CI/CD & MLOps Pipeline Workflow
 
+# ==============================================================================
+# 🚦 REUSABLE CI/CD & MLOPS PIPELINE WORKFLOW
+# Full documentation: .github/workflows/README.md
+#
+# USAGE INSIDE ORGANIZATION (skunchoor):
+# Organization secrets are shared automatically. Use `secrets: inherit`:
+# jobs:
+#   deploy:
+#     uses: skunchoor/traffic-light-governance/.github/workflows/reusable-ci-cd-pipeline.yml@main
+#     with:
+#       service_name: 'My Service'
+#       environment: 'production'
+#     secrets: inherit
+#
+# USAGE OUTSIDE ORGANIZATION / EXTERNAL REPOSITORIES:
+# Pass repository secrets explicitly or via `secrets: inherit`:
+# jobs:
+#   deploy:
+#     uses: skunchoor/traffic-light-governance/.github/workflows/reusable-ci-cd-pipeline.yml@v1.0.0
+#     with:
+#       service_name: 'External App'
+#     secrets:
+#       BACKEND_API_URL: ${{ secrets.BACKEND_API_URL }}
+#       BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+#       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+# ==============================================================================
+
 on:
   workflow_call:
     inputs:
