@@ -37,6 +37,7 @@ class GatekeeperReportCreate(BaseModel):
     pr_number: int
     pr_title: Optional[str] = None
     repo: str
+    project: Optional[str] = "skunchoor/traffic-light-governance"
     traffic_light: str  # GREEN, YELLOW, RED
     test_passed: bool = False
     test_failures: int = 0

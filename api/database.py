@@ -80,3 +80,29 @@ async def get_db():
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        
+        # Auto-migration: safely add new columns to existing tables in PostgreSQL / SQLite
+        from sqlalchemy import text
+        migration_statements = [
+            "ALTER TABLE pipeline_runs ADD COLUMN project VARCHAR DEFAULT 'skunchoor/traffic-light-governance'",
+            "ALTER TABLE deployments ADD COLUMN project VARCHAR DEFAULT 'skunchoor/traffic-light-governance'",
+            "ALTER TABLE deployments ADD COLUMN component VARCHAR DEFAULT 'Azure Container Registry'",
+            "ALTER TABLE model_promotions ADD COLUMN project VARCHAR DEFAULT 'skunchoor/traffic-light-governance'",
+            "ALTER TABLE security_scans ADD COLUMN project VARCHAR DEFAULT 'skunchoor/traffic-light-governance'",
+            "ALTER TABLE gatekeeper_reports ADD COLUMN project VARCHAR DEFAULT 'skunchoor/traffic-light-governance'"
+        ]
+        
+        is_postgres = "postgres" in str(engine.url)
+        for stmt in migration_statements:
+            try:
+                if is_postgres:
+                    stmt_pg = stmt.replace("ADD COLUMN", "ADD COLUMN IF NOT EXISTS")
+                    await conn.execute(text(stmt_pg))
+                else:
+                    await conn.execute(text(stmt))
+            except Exception as e:
+                err_str = str(e).lower()
+                if "already exists" in err_str or "duplicate column" in err_str or "no such column" in err_str:
+                    pass
+                else:
+                    print(f"⚠️ Auto-migration check: {stmt} -> {e}", flush=True)

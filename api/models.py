@@ -36,6 +36,7 @@ class GatekeeperReport(Base):
     pr_number = Column(Integer, index=True, nullable=False)
     pr_title = Column(String, nullable=True)
     repo = Column(String, index=True, nullable=False)
+    project = Column(String, index=True, nullable=True, default="skunchoor/traffic-light-governance")
     traffic_light = Column(String, index=True, nullable=False)  # GREEN, YELLOW, RED
     test_passed = Column(Boolean, default=False)
     test_failures = Column(Integer, default=0)
