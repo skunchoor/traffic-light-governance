@@ -1,4 +1,4 @@
-name: End-to-End MLOps Pipeline & Promotion
+name: End-to-End MLOps & DevOps Pipeline
 
 on:
   push:
@@ -25,32 +25,45 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
-          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"running\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 0, \"project\": \"${{ github.repository }}\"}"
+          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps & DevOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"running\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 0, \"project\": \"${{ github.repository }}\"}"
 
-  # Job 2: Databricks Pipeline Deployment
+  # Job 2: Databricks Pipeline Deployment via Composite Action
   databricks-deploy:
     needs: pipeline-start
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Execute Databricks Composite Action
+        uses: ./.github/actions/databricks-deploy
         with:
-          python-version: '3.11'
-      - name: Execute Databricks Asset Bundle & Job Deployment
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST || 'https://adb-1234567890.12.azuredatabricks.net' }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN || 'simulated_token' }}
-          ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
-          SERVICE_NAME: "Customer Churn & Fraud ETL Pipeline"
-          TRAFFIC_LIGHT: "GREEN"
-          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
-          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
-        run: uv run python .github/scripts/databricks_deployer.py
+          environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          service_name: "Customer Churn & Fraud ETL Pipeline"
+          notebook_path: "databricks/notebooks/notebook.py"
+          job_config_path: "databricks/jobs/etl.yaml"
+          model_name: "FraudDetection-XGBoost"
+          traffic_light: "GREEN"
+          databricks_host: ${{ secrets.DATABRICKS_HOST || 'https://adb-1234567890.12.azuredatabricks.net' }}
+          databricks_token: ${{ secrets.DATABRICKS_TOKEN || 'simulated_token' }}
+          backend_api_url: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          backend_api_key: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
 
-  # Job 3: MLflow Model Evaluation & Traffic Light Promotion
+  # Job 3: Azure Container Apps Deployment via Composite Action
+  azure-deploy:
+    needs: pipeline-start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute Azure Container Apps Composite Action
+        uses: ./.github/actions/azure-container-deploy
+        with:
+          environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          service_name: "Traffic Light Governance API Service"
+          component: "Azure Container Registry"
+          dockerfile_path: "docker/Dockerfile"
+          backend_api_url: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          backend_api_key: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+
+  # Job 4: MLflow Model Evaluation & Traffic Light Promotion
   model-promotion:
     needs: databricks-deploy
     runs-on: ubuntu-latest
@@ -73,9 +86,9 @@ jobs:
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: uv run python .github/scripts/model_registry.py
 
-  # Job 4: Notify final pipeline status
+  # Job 5: Notify final pipeline status
   pipeline-finish:
-    needs: [databricks-deploy, model-promotion]
+    needs: [databricks-deploy, azure-deploy, model-promotion]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -91,5 +104,5 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
-          STATUS="${{ needs.databricks-deploy.result == 'success' && needs.model-promotion.result == 'success' && 'success' || 'failed' }}"
-          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"$STATUS\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 125.4, \"project\": \"${{ github.repository }}\"}"
+          STATUS="${{ needs.databricks-deploy.result == 'success' && needs.azure-deploy.result == 'success' && needs.model-promotion.result == 'success' && 'success' || 'failed' }}"
+          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps & DevOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"$STATUS\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 138.2, \"project\": \"${{ github.repository }}\"}"

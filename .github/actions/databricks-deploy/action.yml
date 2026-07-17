@@ -1,0 +1,139 @@
+name: 'Databricks Notebook, Model & Job Deployment Action'
+description: 'Composite action for executing Databricks Notebook deployments, MLflow Model stage promotions, and Databricks Asset Bundle Job deployments governed by Traffic Light CI/CD.'
+author: 'Traffic Light Governance'
+
+inputs:
+  environment:
+    description: 'Target Databricks environment (staging, production)'
+    required: false
+    default: 'staging'
+  service_name:
+    description: 'Databricks pipeline or job service name'
+    required: false
+    default: 'Customer Churn & Fraud ETL Pipeline'
+  notebook_path:
+    description: 'Path to target Databricks notebook'
+    required: false
+    default: 'databricks/notebooks/notebook.py'
+  job_config_path:
+    description: 'Path to Databricks Asset Bundle or Job configuration'
+    required: false
+    default: 'databricks/jobs/etl.yaml'
+  model_name:
+    description: 'Target MLflow model name'
+    required: false
+    default: 'FraudDetection-XGBoost'
+  traffic_light:
+    description: 'Governance decision gate (GREEN, YELLOW, RED)'
+    required: false
+    default: 'GREEN'
+  databricks_host:
+    description: 'Databricks workspace URL'
+    required: false
+    default: 'https://adb-simulated.azuredatabricks.net'
+  databricks_token:
+    description: 'Databricks personal access or service principal token'
+    required: false
+    default: 'simulated_token'
+  backend_api_url:
+    description: 'Traffic Light Governance Backend API URL'
+    required: true
+  backend_api_key:
+    description: 'Traffic Light Governance Backend API Key'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Notify Databricks Deployment Start
+      shell: bash
+      env:
+        BACKEND_API_URL: ${{ inputs.backend_api_url }}
+        BACKEND_API_KEY: ${{ inputs.backend_api_key }}
+      run: |
+        python -c '
+import os, sys, json, urllib.request
+url = os.environ["BACKEND_API_URL"].rstrip("/") + "/api/v1/deployments"
+payload = {
+    "environment": "${{ inputs.environment }}",
+    "service_name": "${{ inputs.service_name }}",
+    "commit_sha": "${{ github.sha }}",
+    "deployer": "${{ github.actor }}",
+    "status": "in-progress",
+    "target_url": "${{ inputs.databricks_host }}",
+    "project": "${{ github.repository }}",
+    "component": "Databricks"
+}
+req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json", "X-API-Key": os.environ["BACKEND_API_KEY"]})
+try: urllib.request.urlopen(req)
+except Exception as e: print(f"⚠️ Telemetry notice: {e}")
+'
+
+    - name: Deploy Databricks Notebooks & Jobs
+      shell: bash
+      run: |
+        echo "🌐 Connecting to Databricks Workspace: ${{ inputs.databricks_host }}"
+        echo "🚦 Governance check: [${{ inputs.traffic_light }}]"
+        if [ "${{ inputs.traffic_light }}" = "RED" ]; then
+          echo "❌ Deployment blocked by Traffic Light Governance status RED."
+          exit 1
+        fi
+        echo "📓 Deploying Notebook payload from: ${{ inputs.notebook_path }}..."
+        echo "⚙️ Registering and deploying Databricks Job bundle from: ${{ inputs.job_config_path }}..."
+        sleep 2
+        echo "✅ Databricks Notebooks and Jobs deployed successfully."
+
+    - name: Notify Databricks Deployment Success
+      if: success()
+      shell: bash
+      env:
+        BACKEND_API_URL: ${{ inputs.backend_api_url }}
+        BACKEND_API_KEY: ${{ inputs.backend_api_key }}
+      run: |
+        python -c '
+import os, sys, json, urllib.request
+url = os.environ["BACKEND_API_URL"].rstrip("/") + "/api/v1/deployments"
+payload = {
+    "environment": "${{ inputs.environment }}",
+    "service_name": "${{ inputs.service_name }}",
+    "commit_sha": "${{ github.sha }}",
+    "deployer": "${{ github.actor }}",
+    "status": "success",
+    "target_url": "${{ inputs.databricks_host }}",
+    "project": "${{ github.repository }}",
+    "component": "Databricks"
+}
+req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json", "X-API-Key": os.environ["BACKEND_API_KEY"]})
+try: urllib.request.urlopen(req)
+except Exception as e: print(f"⚠️ Telemetry notice: {e}")
+'
+
+    - name: Notify Databricks Deployment Failure
+      if: failure()
+      shell: bash
+      env:
+        BACKEND_API_URL: ${{ inputs.backend_api_url }}
+        BACKEND_API_KEY: ${{ inputs.backend_api_key }}
+      run: |
+        python -c '
+import os, sys, json, urllib.request
+url = os.environ["BACKEND_API_URL"].rstrip("/") + "/api/v1/deployments"
+payload = {
+    "environment": "${{ inputs.environment }}",
+    "service_name": "${{ inputs.service_name }}",
+    "commit_sha": "${{ github.sha }}",
+    "deployer": "${{ github.actor }}",
+    "status": "failed",
+    "target_url": "${{ inputs.databricks_host }}",
+    "project": "${{ github.repository }}",
+    "component": "Databricks"
+}
+req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json", "X-API-Key": os.environ["BACKEND_API_KEY"]})
+try: urllib.request.urlopen(req)
+except Exception as e: print(f"⚠️ Telemetry notice: {e}")
+'

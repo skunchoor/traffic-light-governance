@@ -1,0 +1,200 @@
+name: Reusable Unified CI/CD & MLOps Pipeline Workflow
+
+on:
+  workflow_call:
+    inputs:
+      workflow_name:
+        description: 'Name of the CI/CD pipeline workflow'
+        required: false
+        type: string
+        default: 'Organization MLOps & DevOps Pipeline'
+      service_name:
+        description: 'Microservice or API name being deployed'
+        required: false
+        type: string
+        default: 'Traffic Light Governance Service'
+      model_name:
+        description: 'Target MLflow model name'
+        required: false
+        type: string
+        default: 'FraudDetection-XGBoost'
+      model_version:
+        description: 'Model version string'
+        required: false
+        type: string
+        default: 'v3.5.0'
+      environment:
+        description: 'Target deployment environment (staging, production)'
+        required: false
+        type: string
+        default: 'staging'
+      run_databricks_deploy:
+        description: 'Whether to deploy Databricks Notebooks, Models, and Jobs'
+        required: false
+        type: boolean
+        default: true
+      run_azure_deploy:
+        description: 'Whether to deploy container revision to Azure Container Apps'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      BACKEND_API_URL:
+        required: false
+      BACKEND_API_KEY:
+        required: false
+      DATABRICKS_HOST:
+        required: false
+      DATABRICKS_TOKEN:
+        required: false
+      AZURE_CREDENTIALS:
+        required: false
+
+jobs:
+  pipeline-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Central Traffic Light Governance Scripts
+        uses: actions/checkout@v4
+        with:
+          repository: skunchoor/traffic-light-governance
+          path: .tlg-governance
+          ref: main
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Notify Backend Pipeline Ingestion (Running)
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          uv run python .tlg-governance/.github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"${{ inputs.workflow_name }}\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"running\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 0, \"project\": \"${{ github.repository }}\"}"
+
+  databricks-deploy:
+    needs: pipeline-start
+    if: ${{ inputs.run_databricks_deploy }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Central Traffic Light Governance Actions
+        uses: actions/checkout@v4
+        with:
+          repository: skunchoor/traffic-light-governance
+          path: .tlg-governance
+          ref: main
+
+      - name: Execute Databricks Composite Action
+        uses: ./.tlg-governance/.github/actions/databricks-deploy
+        with:
+          environment: ${{ inputs.environment }}
+          service_name: ${{ inputs.service_name }}
+          notebook_path: '.tlg-governance/databricks/notebooks/notebook.py'
+          job_config_path: '.tlg-governance/databricks/jobs/etl.yaml'
+          model_name: ${{ inputs.model_name }}
+          traffic_light: 'GREEN'
+          databricks_host: ${{ secrets.DATABRICKS_HOST || 'https://adb-1234567890.12.azuredatabricks.net' }}
+          databricks_token: ${{ secrets.DATABRICKS_TOKEN || 'simulated_token' }}
+          backend_api_url: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          backend_api_key: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+
+  azure-deploy:
+    needs: pipeline-start
+    if: ${{ inputs.run_azure_deploy }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Central Traffic Light Governance Actions
+        uses: actions/checkout@v4
+        with:
+          repository: skunchoor/traffic-light-governance
+          path: .tlg-governance
+          ref: main
+
+      - name: Execute Azure Container Apps Composite Action
+        uses: ./.tlg-governance/.github/actions/azure-container-deploy
+        with:
+          environment: ${{ inputs.environment }}
+          service_name: ${{ inputs.service_name }}
+          component: 'Azure Container Registry'
+          dockerfile_path: '.tlg-governance/docker/Dockerfile'
+          backend_api_url: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          backend_api_key: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+
+  model-promotion:
+    needs: [databricks-deploy]
+    if: ${{ inputs.run_databricks_deploy }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Central Traffic Light Governance Scripts
+        uses: actions/checkout@v4
+        with:
+          repository: skunchoor/traffic-light-governance
+          path: .tlg-governance
+          ref: main
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run MLflow Stage Promotion Evaluation
+        env:
+          MODEL_NAME: ${{ inputs.model_name }}
+          MODEL_VERSION: ${{ inputs.model_version }}
+          FROM_STAGE: "Staging"
+          TARGET_STAGE: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }}
+          TRAFFIC_LIGHT: "GREEN"
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: uv run python .tlg-governance/.github/scripts/model_registry.py
+
+  pipeline-finish:
+    needs: [databricks-deploy, azure-deploy, model-promotion]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Central Traffic Light Governance Scripts
+        uses: actions/checkout@v4
+        with:
+          repository: skunchoor/traffic-light-governance
+          path: .tlg-governance
+          ref: main
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Notify Backend Pipeline Ingestion (Completed)
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          STATUS="${{ needs.databricks-deploy.result != 'failure' && needs.azure-deploy.result != 'failure' && needs.model-promotion.result != 'failure' && 'success' || 'failed' }}"
+          uv run python .tlg-governance/.github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"${{ inputs.workflow_name }}\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"$STATUS\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 132.8, \"project\": \"${{ github.repository }}\"}"

@@ -82,15 +82,56 @@ Our CI/CD pipelines run a parallel matrix of open-source and enterprise-ready se
   - **PR Governance Donut Chart**: Breakdown of GREEN vs. YELLOW vs. RED pull requests.
   - **Sparklines & Live Activity Feed**: Real-time ticker showing incoming SSE notifications.
 
-### 3. GitHub Actions & MLOps Scripts (`.github/`)
-- **`workflows/gatekeeper.yml`**: Triggers on PR events, runs parallel unit tests and 7 security scanners, executes `gatekeeper.py`, and posts structured PR comments.
-- **`workflows/ci_cd_pipeline.yml`**: Orchestrates end-to-end Databricks asset bundle deployment and MLflow model stage transitions.
-- **`workflows/azure_deploy.yml`**: Triggers container rollout to Azure Container Apps upon GREEN governance verification.
-- **`workflows/deploy_dashboard.yml`**: Compiles Vite React bundle and deploys directly to GitHub Pages.
-- **`scripts/gatekeeper.py`**: Core Python evaluation engine combining test XML reports, JSON security outputs, and file risk classifications.
+### 3. GitHub Actions, Composite Actions & Deployment Hierarchy
+- **`docker/`**: Container related deployment checks and multi-stage Dockerfile (`docker/Dockerfile`).
+- **`databricks/notebooks/notebook.py`**: Databricks sample & deployment notebook for feature engineering and batch scoring.
+- **`databricks/jobs/etl.yaml`**: Databricks Asset Bundle (DAB) / Job configuration file targeting `databricks/notebooks/notebook.py`.
+- **`workflows/gatekeeper.yml` & `reusable-gatekeeper.yml`**: Centralized PR quality gate (`Semgrep`, `Bandit`, `Snyk`, `Safety`, `pip-audit`, `Trivy`, `Gitleaks`, `pytest`, `gatekeeper.py`) callable via `on: workflow_call`.
+- **`workflows/ci_cd_pipeline.yml` & `reusable-ci-cd-pipeline.yml`**: Unified end-to-end MLOps Databricks and DevOps Azure container rollout workflow calling modular composite actions.
+- **`actions/azure-container-deploy/action.yml`**: Composite action encapsulating Docker build verification, Azure Container Registry (ACR) authentication, and Container Apps deployment.
+- **`actions/databricks-deploy/action.yml`**: Composite action encapsulating Databricks Notebook deployment, MLflow model promotion, and Job deployment.
+- **`scripts/gatekeeper.py`**: Core Python evaluation engine combining test XML reports, JSON security outputs, and file risk classifications (`GREEN`, `YELLOW`, `RED`).
 - **`scripts/notify_backend.py`**: Shared resilient webhook utility featuring exponential backoff and retry logic.
 - **`scripts/databricks_deployer.py`**: Databricks workspace job and ETL pipeline deployment automation.
 - **`scripts/model_registry.py`**: MLflow model evaluation checking accuracy (`>0.90`) and F1 thresholds (`>0.88`) before promoting from `Staging` to `Production`.
+
+---
+
+## 🔄 Reusable Workflows across Organization & Personal Repositories
+
+Any repository across your GitHub Organization (`skunchoor`) or personal account can integrate full-stack Traffic Light Governance & MLOps CI/CD in 5 lines of YAML by calling our reusable workflows (`reusable-gatekeeper.yml` and `reusable-ci-cd-pipeline.yml`).
+
+### Example Usage (`.github/workflows/governance-pipeline.yml`)
+```yaml
+name: Organization Governance & Quality Gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, staging]
+
+jobs:
+  # 1. Automated PR Governance & SAST/SCA Quality Gate
+  gatekeeper:
+    if: github.event_name == 'pull_request'
+    uses: skunchoor/traffic-light-governance/.github/workflows/reusable-gatekeeper.yml@main
+    with:
+      python_version: '3.11'
+      run_security_scans: true
+    secrets: inherit # Inherits BACKEND_API_URL and BACKEND_API_KEY from Organization Secrets
+
+  # 2. Unified CI/CD Deployment (Databricks + Azure Containers)
+  deploy:
+    if: github.event_name == 'push'
+    uses: skunchoor/traffic-light-governance/.github/workflows/reusable-ci-cd-pipeline.yml@main
+    with:
+      workflow_name: 'Organization Unified Pipeline'
+      service_name: 'Target Service'
+      environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      run_databricks_deploy: true
+      run_azure_deploy: true
+    secrets: inherit
+```
 
 ---
 

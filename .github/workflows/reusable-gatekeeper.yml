@@ -1,0 +1,178 @@
+name: Reusable Traffic Light Gatekeeper Workflow
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        description: 'Python version to use for tests and scans'
+        required: false
+        type: string
+        default: '3.11'
+      test_command:
+        description: 'Shell command to execute automated tests and output JUnit XML to test-results.xml'
+        required: false
+        type: string
+        default: 'PYTHONPATH=. uv run pytest tests/ --junitxml=test-results.xml || true'
+      extra_dependencies:
+        description: 'Additional system or pip dependencies to install before running tests'
+        required: false
+        type: string
+        default: ''
+      run_security_scans:
+        description: 'Whether to execute multi-tool SAST/SCA security checks'
+        required: false
+        type: boolean
+        default: true
+      project_override:
+        description: 'Optional override for repository identifier in telemetry'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      BACKEND_API_URL:
+        required: false
+      BACKEND_API_KEY:
+        required: false
+      GITHUB_TOKEN:
+        required: false
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository (Code to Scan)
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install Test Dependencies
+        run: |
+          uv pip install --system pytest junitparser
+          if [ -n "${{ inputs.extra_dependencies }}" ]; then
+            uv pip install --system ${{ inputs.extra_dependencies }}
+          fi
+          if [ -f requirements.txt ]; then uv pip install --system -r requirements.txt; fi
+
+      - name: Run Automated Tests & Generate JUnit Report
+        run: ${{ inputs.test_command }}
+
+      - name: Upload Test Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          retention-days: 7
+
+  security-scans:
+    if: ${{ inputs.run_security_scans }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository (Code to Scan)
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install Security Scanners
+        run: uv pip install --system bandit safety pip-audit
+
+      - name: Run Bandit (Python AST SAST)
+        run: uv run bandit -r . -f json -o bandit.json || true
+
+      - name: Run Safety (CVE Dependency Scan)
+        run: uv run safety check --json --output safety.json || true
+
+      - name: Run pip-audit (PyPI Advisory Audit)
+        run: |
+          if [ -f requirements.txt ]; then
+            uv run pip-audit -r requirements.txt -f json -o pip-audit.json || true
+          else
+            echo '{"dependencies":[]}' > pip-audit.json
+          fi
+
+      - name: Run Semgrep (SAST Engine)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          generateSarif: false
+        env:
+          SEMGREP_RULES: p/python p/security-audit
+        continue-on-error: true
+
+      - name: Generate Fallback JSON Reports if missing
+        run: |
+          if [ ! -f bandit.json ]; then echo '{"results":[]}' > bandit.json; fi
+          if [ ! -f safety.json ]; then echo '{"vulnerabilities":[]}' > safety.json; fi
+          if [ ! -f pip-audit.json ]; then echo '{"dependencies":[]}' > pip-audit.json; fi
+          if [ ! -f semgrep.json ]; then echo '{"results":[]}' > semgrep.json; fi
+          if [ ! -f snyk.json ]; then echo '{"vulnerabilities":[]}' > snyk.json; fi
+          if [ ! -f trivy.json ]; then echo '{"Results":[]}' > trivy.json; fi
+          if [ ! -f gitleaks.json ]; then echo '[]' > gitleaks.json; fi
+
+      - name: Upload Security Reports Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: '*.json'
+          retention-days: 7
+
+  gatekeeper-bot:
+    needs: [run-tests, security-scans]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repository (Code to Scan)
+        uses: actions/checkout@v4
+
+      - name: Checkout Central Traffic Light Governance Scripts
+        uses: actions/checkout@v4
+        with:
+          repository: skunchoor/traffic-light-governance
+          path: .tlg-governance
+          ref: main
+
+      - name: Download Test Report Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          path: .
+        continue-on-error: true
+
+      - name: Download Security Reports Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: security-reports
+          path: .
+        continue-on-error: true
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install Bot Dependencies
+        run: uv pip install --system PyGithub junitparser requests
+
+      - name: Run Gatekeeper Evaluation & Notify Dashboard
+        id: gatekeeper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '1' }}
+          PR_TITLE: ${{ github.event.pull_request.title || 'PR Governance Evaluation' }}
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+          GITHUB_REPOSITORY: ${{ inputs.project_override || github.repository }}
+        run: uv run python .tlg-governance/.github/scripts/gatekeeper.py

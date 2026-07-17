@@ -1,0 +1,47 @@
+# Databricks Asset Bundle (DAB) / Job Deployment Configuration
+# Governed by Traffic Light Governance
+
+bundle:
+  name: traffic-light-governance-etl
+
+resources:
+  jobs:
+    etl_pipeline_job:
+      name: "[${bundle.environment}] Customer Churn & Fraud ETL Pipeline"
+      description: "Automated batch ETL and ML scoring pipeline governed by Traffic Light CI/CD checks."
+      max_concurrent_runs: 1
+
+      tasks:
+        - task_key: run_feature_engineering_and_scoring
+          notebook_task:
+            notebook_path: ../notebooks/notebook.py
+            base_parameters:
+              environment: "${bundle.environment}"
+              model_name: "FraudDetection-XGBoost"
+              traffic_light: "GREEN"
+          timeout_seconds: 3600
+          job_cluster_key: etl_job_cluster
+
+      job_clusters:
+        - job_cluster_key: etl_job_cluster
+          new_cluster:
+            spark_version: "14.3.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 2
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+
+targets:
+  staging:
+    default: true
+    workspace:
+      host: https://adb-staging.azuredatabricks.net
+    variables:
+      environment: staging
+
+  production:
+    workspace:
+      host: https://adb-prod.azuredatabricks.net
+    variables:
+      environment: production

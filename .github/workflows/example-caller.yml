@@ -1,0 +1,35 @@
+name: Organization Reusable Governance & MLOps Caller Template
+
+# Example workflow demonstrating how any repository across the 'skunchoor' organization
+# or personal account can integrate Traffic Light Governance & MLOps CI/CD in just a few lines of YAML.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+jobs:
+  # 1. Reusable Gatekeeper Quality Gate (Runs on PRs)
+  gatekeeper-check:
+    if: github.event_name == 'pull_request'
+    uses: skunchoor/traffic-light-governance/.github/workflows/reusable-gatekeeper.yml@main
+    with:
+      python_version: '3.11'
+      test_command: 'PYTHONPATH=. uv run pytest tests/ --junitxml=test-results.xml || true'
+      run_security_scans: true
+    secrets: inherit
+
+  # 2. Reusable Unified CI/CD & MLOps Pipeline (Runs on merges / push to main or staging)
+  deploy-pipeline:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    uses: skunchoor/traffic-light-governance/.github/workflows/reusable-ci-cd-pipeline.yml@main
+    with:
+      workflow_name: 'Target Repo Unified Pipeline'
+      service_name: 'Target Microservice'
+      model_name: 'FraudDetection-XGBoost'
+      environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      run_databricks_deploy: true
+      run_azure_deploy: true
+    secrets: inherit

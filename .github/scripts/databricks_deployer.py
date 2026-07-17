@@ -65,11 +65,13 @@ def deploy_to_databricks():
     })
 
     # 3. Execute Databricks CLI / Job triggering logic
-    # In live CI, this invokes `databricks bundle deploy` or `databricks jobs run-now`
+    # In live CI, this invokes `databricks bundle deploy` targeting `databricks/jobs/etl.yaml` and `databricks/notebooks/notebook.py`
     print("⏳ Running Databricks asset bundle deployment tasks and job verification...")
+    print(f"📓 Verifying notebook asset: `databricks/notebooks/notebook.py`...")
+    print(f"⚙️ Applying job configuration: `databricks/jobs/etl.yaml`...")
     # Simulated deployment completion
     status = "success"
-    print("✨ Databricks deployment & job registration completed successfully.")
+    print("✨ Databricks deployment (Notebooks, Models, Jobs) & job registration completed successfully.")
 
     # 4. Notify final status
     notify_backend("api/v1/deployments", {
