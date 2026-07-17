@@ -37,7 +37,7 @@ jobs:
 
       - name: Build Dashboard with Production API URL
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://traffic-light-governance.vercel.app' }}
         run: npm run build
 
       - name: Setup Pages

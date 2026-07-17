@@ -1,7 +1,7 @@
 // API URL configuration
 // During GitHub Pages deployment, VITE_API_URL is injected via GitHub Actions environment variable
-// Fallback to localhost during development
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Fallback to Vercel backend if hosted on github.io or localhost:8000 locally
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.hostname.includes("github.io") ? "https://traffic-light-governance.vercel.app" : "http://localhost:8000");
 
 export const COLORS = {
   GREEN: "#22c55e",

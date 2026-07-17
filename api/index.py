@@ -29,11 +29,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration allowing GitHub Pages & localhost
+# CORS configuration allowing GitHub Pages, Vercel & localhost
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"] if "*" in settings.ALLOWED_ORIGINS else settings.ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.github\.io|https://.*\.vercel\.app|http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=False if "*" in settings.ALLOWED_ORIGINS else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
