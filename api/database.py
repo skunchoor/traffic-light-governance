@@ -59,15 +59,15 @@ _db_initialized = False
 async def get_db():
     global _db_initialized
     if not _db_initialized:
-        await init_db()
         try:
+            await init_db()
             from api.seed_data import seed_if_empty
             async with AsyncSessionLocal() as seed_session:
                 await seed_if_empty(seed_session)
+            _db_initialized = True
         except Exception as e:
             if settings.DEBUG:
                 print(f"Error seeding database on startup: {e}")
-        _db_initialized = True
 
     async with AsyncSessionLocal() as session:
         try:

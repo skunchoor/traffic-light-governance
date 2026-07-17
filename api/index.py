@@ -9,10 +9,13 @@ from api.routers import webhooks, pipelines, deployments, models, gatekeeper, me
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB and run seeder on startup
-    await init_db()
-    async with AsyncSessionLocal() as session:
-        await seed_if_empty(session)
+    # Initialize DB and run seeder on startup gracefully without failing Vercel lambda cold boot
+    try:
+        await init_db()
+        async with AsyncSessionLocal() as session:
+            await seed_if_empty(session)
+    except Exception as e:
+        print(f"Lifespan startup notice: {e}")
     yield
 
 
