@@ -35,7 +35,7 @@ export const ModelsPage = () => {
             <option value="RED">RED (Blocked)</option>
           </select>
           <button
-            onClick={reload}
+            onClick={() => reload(true)}
             style={{
               padding: "0.5rem 1rem",
               borderRadius: "8px",
@@ -52,9 +52,9 @@ export const ModelsPage = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading && !models ? (
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading model promotions...</div>
-      ) : error ? (
+      ) : error && !models ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading model promotions: {error}</div>
       ) : !models || models.length === 0 ? (
         <EmptyState title="No models promoted" description="Train and evaluate models via Databricks / MLflow pipelines to record promotions." />

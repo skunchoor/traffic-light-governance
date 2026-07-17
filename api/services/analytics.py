@@ -100,10 +100,11 @@ async def get_dashboard_summary_data(session: AsyncSession) -> Dict[str, Any]:
     # DORA metrics
     dora = await compute_dora_metrics(session)
 
-    # Security summary across tools
+    # Security summary across tools and projects
     sec_res = await session.execute(select(SecurityScan))
     scans = sec_res.scalars().all()
-    sec_summary: Dict[str, Dict[str, int]] = {}
+    sec_summary: Dict[str, Any] = {}
+    by_project: Dict[str, Dict[str, int]] = {}
     for s in scans:
         if s.tool_name not in sec_summary:
             sec_summary[s.tool_name] = {"high": 0, "medium": 0, "low": 0, "total": 0}
@@ -111,6 +112,16 @@ async def get_dashboard_summary_data(session: AsyncSession) -> Dict[str, Any]:
         sec_summary[s.tool_name]["medium"] += s.medium_count
         sec_summary[s.tool_name]["low"] += s.low_count
         sec_summary[s.tool_name]["total"] += s.findings_count
+
+        proj = getattr(s, "project", None) or "skunchoor/traffic-light-governance"
+        if proj not in by_project:
+            by_project[proj] = {"high": 0, "medium": 0, "low": 0, "total": 0}
+        by_project[proj]["high"] += s.high_count
+        by_project[proj]["medium"] += s.medium_count
+        by_project[proj]["low"] += s.low_count
+        by_project[proj]["total"] += s.findings_count
+
+    sec_summary["by_project"] = by_project
 
     # Recent events (combined latest from pipeline runs, deploys, and gatekeeper)
     events = []

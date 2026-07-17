@@ -9,6 +9,7 @@ export const GatekeeperTable = ({ reports = [] }) => {
         <thead>
           <tr style={{ borderBottom: "1px solid var(--border-card)", background: "rgba(255,255,255,0.02)", color: "var(--text-secondary)" }}>
             <th style={{ padding: "1rem" }}>Decision</th>
+            <th style={{ padding: "1rem" }}>Project</th>
             <th style={{ padding: "1rem" }}>Pull Request</th>
             <th style={{ padding: "1rem" }}>Tests Status</th>
             <th style={{ padding: "1rem" }}>Security Findings</th>
@@ -26,8 +27,12 @@ export const GatekeeperTable = ({ reports = [] }) => {
                   <TrafficLightBadge light={rep.traffic_light} size="sm" />
                 </td>
                 <td style={{ padding: "1rem" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", padding: "0.2rem 0.5rem", background: "rgba(255,255,255,0.04)", borderRadius: "4px", color: "var(--text-primary)" }}>
+                    {rep.repo || "skunchoor/traffic-light-governance"}
+                  </span>
+                </td>
+                <td style={{ padding: "1rem" }}>
                   <strong style={{ color: "var(--text-primary)" }}>#{rep.pr_number} {rep.pr_title}</strong>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{rep.repo}</div>
                 </td>
                 <td style={{ padding: "1rem" }}>
                   {rep.test_passed ? (

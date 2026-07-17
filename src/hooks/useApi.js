@@ -10,8 +10,10 @@ export const useApi = (fetchFunction, dependencies = []) => {
     fetchRef.current = fetchFunction;
   }, [fetchFunction]);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async (showLoading = true) => {
+    if (showLoading === true || (typeof showLoading !== "boolean")) {
+      setLoading(true);
+    }
     try {
       const res = await fetchRef.current();
       setData(res);
@@ -24,7 +26,7 @@ export const useApi = (fetchFunction, dependencies = []) => {
   }, []);
 
   useEffect(() => {
-    reload();
+    reload(true);
   }, [...dependencies]);
 
   return { data, loading, error, reload, setData };

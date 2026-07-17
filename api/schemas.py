@@ -15,6 +15,7 @@ class PipelineRunCreate(BaseModel):
     workflow_name: str
     run_id: str
     run_number: Optional[int] = None
+    project: Optional[str] = "skunchoor/traffic-light-governance"
     status: str
     trigger: Optional[str] = None
     branch: Optional[str] = None
@@ -56,6 +57,8 @@ class DeploymentCreate(BaseModel):
     environment: str
     version: str
     image_tag: Optional[str] = None
+    project: Optional[str] = "skunchoor/traffic-light-governance"
+    component: Optional[str] = "Azure Container Registry"
     status: str
     deployed_by: Optional[str] = None
     azure_resource: Optional[str] = None
@@ -73,6 +76,7 @@ class DeploymentResponse(DeploymentCreate):
 class ModelPromotionCreate(BaseModel):
     model_name: str
     model_version: str
+    project: Optional[str] = "skunchoor/traffic-light-governance"
     from_stage: str
     to_stage: str
     metrics: Dict[str, Any] = Field(default_factory=dict)
@@ -110,6 +114,7 @@ class DatabricksPipelineRunResponse(DatabricksPipelineRunCreate):
 class SecurityScanCreate(BaseModel):
     pipeline_run_id: Optional[int] = None
     tool_name: str
+    project: Optional[str] = "skunchoor/traffic-light-governance"
     findings_count: int = 0
     high_count: int = 0
     medium_count: int = 0
@@ -146,4 +151,4 @@ class DashboardSummary(BaseModel):
     traffic_light_distribution: Dict[str, int]  # {GREEN: n, YELLOW: n, RED: n}
     recent_events: List[Dict[str, Any]]
     dora_metrics: DORAMetrics
-    security_summary: Dict[str, Dict[str, int]]
+    security_summary: Dict[str, Any]

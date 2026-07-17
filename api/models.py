@@ -15,6 +15,7 @@ class PipelineRun(Base):
     workflow_name = Column(String, index=True, nullable=False)
     run_id = Column(String, unique=True, index=True, nullable=False)
     run_number = Column(Integer, nullable=True)
+    project = Column(String, index=True, nullable=True, default="skunchoor/traffic-light-governance")
     status = Column(String, index=True, nullable=False)  # running, success, failed
     trigger = Column(String, nullable=True)  # push, pull_request, workflow_dispatch
     branch = Column(String, nullable=True)
@@ -52,6 +53,8 @@ class Deployment(Base):
     environment = Column(String, index=True, nullable=False)  # staging, production
     version = Column(String, nullable=False)
     image_tag = Column(String, nullable=True)
+    project = Column(String, index=True, nullable=True, default="skunchoor/traffic-light-governance")
+    component = Column(String, index=True, nullable=True, default="Azure Container Registry")
     status = Column(String, index=True, nullable=False)  # pending, deploying, success, failed, rolled-back
     deployed_by = Column(String, nullable=True)
     azure_resource = Column(String, nullable=True)
@@ -66,6 +69,7 @@ class ModelPromotion(Base):
     id = Column(Integer, primary_key=True, index=True)
     model_name = Column(String, index=True, nullable=False)
     model_version = Column(String, nullable=False)
+    project = Column(String, index=True, nullable=True, default="skunchoor/traffic-light-governance")
     from_stage = Column(String, nullable=False)  # None, Staging
     to_stage = Column(String, nullable=False)  # Staging, Production
     metrics = Column(JSON, default=dict)  # {accuracy, f1, auc, drift}
@@ -97,6 +101,7 @@ class SecurityScan(Base):
     id = Column(Integer, primary_key=True, index=True)
     pipeline_run_id = Column(Integer, ForeignKey("pipeline_runs.id"), nullable=True)
     tool_name = Column(String, index=True, nullable=False)  # semgrep, bandit, snyk, safety, pip-audit, trivy, gitleaks
+    project = Column(String, index=True, nullable=True, default="skunchoor/traffic-light-governance")
     findings_count = Column(Integer, default=0)
     high_count = Column(Integer, default=0)
     medium_count = Column(Integer, default=0)

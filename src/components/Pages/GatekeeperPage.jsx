@@ -35,7 +35,7 @@ export const GatekeeperPage = () => {
             <option value="RED">RED (Blocked)</option>
           </select>
           <button
-            onClick={reload}
+            onClick={() => reload(true)}
             style={{
               padding: "0.5rem 1rem",
               borderRadius: "8px",
@@ -52,9 +52,9 @@ export const GatekeeperPage = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading && !reports ? (
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading gatekeeper reports...</div>
-      ) : error ? (
+      ) : error && !reports ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading reports: {error}</div>
       ) : !reports || reports.length === 0 ? (
         <EmptyState title="No governance evaluations yet" description="Submit Pull Requests to trigger the automated Traffic Light evaluation." />

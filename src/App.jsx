@@ -32,8 +32,8 @@ export function App() {
         timestamp: new Date().toISOString()
       };
       setLiveEvents((prev) => [newEv, ...prev.slice(0, 15)]);
-      // Trigger a silent reload of summary data
-      reload();
+      // Trigger a silent reload of summary data without unmounting content
+      reload(false);
     }
   }, [lastEvent, reload]);
 

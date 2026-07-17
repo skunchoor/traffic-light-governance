@@ -9,6 +9,7 @@ export const PipelineTable = ({ pipelines = [] }) => {
         <thead>
           <tr style={{ borderBottom: "1px solid var(--border-card)", background: "rgba(255,255,255,0.02)", color: "var(--text-secondary)" }}>
             <th style={{ padding: "1rem" }}>Status</th>
+            <th style={{ padding: "1rem" }}>Project</th>
             <th style={{ padding: "1rem" }}>Workflow / Run</th>
             <th style={{ padding: "1rem" }}>Branch & Commit</th>
             <th style={{ padding: "1rem" }}>Trigger / Actor</th>
@@ -22,6 +23,11 @@ export const PipelineTable = ({ pipelines = [] }) => {
               <td style={{ padding: "1rem" }}>
                 <StatusDot status={run.status} pulsing={run.status === "running"} />
                 <span style={{ marginLeft: "0.5rem", textTransform: "capitalize", fontWeight: 500 }}>{run.status}</span>
+              </td>
+              <td style={{ padding: "1rem" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", padding: "0.2rem 0.5rem", background: "rgba(255,255,255,0.04)", borderRadius: "4px", color: "var(--text-primary)" }}>
+                  {run.project || "skunchoor/traffic-light-governance"}
+                </span>
               </td>
               <td style={{ padding: "1rem" }}>
                 <strong style={{ color: "var(--text-primary)" }}>{run.workflow_name}</strong>

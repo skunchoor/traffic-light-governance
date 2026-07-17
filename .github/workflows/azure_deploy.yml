@@ -22,7 +22,7 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
-          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"in-progress\", \"target_url\": \"https://traffic-light-backend.vercel.app\"}"
+          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"in-progress\", \"target_url\": \"https://traffic-light-backend.vercel.app\", \"project\": \"${{ github.repository }}\", \"component\": \"Azure Container Registry\"}"
 
       - name: Simulate Container Build & Azure Rollout
         run: |
@@ -38,7 +38,7 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
-          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"success\", \"target_url\": \"https://traffic-light-backend.vercel.app\"}"
+          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"success\", \"target_url\": \"https://traffic-light-backend.vercel.app\", \"project\": \"${{ github.repository }}\", \"component\": \"Azure Container Registry\"}"
 
       - name: Notify Deployment Failure
         if: failure()
@@ -46,4 +46,4 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
-          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"failed\", \"target_url\": \"https://traffic-light-backend.vercel.app\"}"
+          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"failed\", \"target_url\": \"https://traffic-light-backend.vercel.app\", \"project\": \"${{ github.repository }}\", \"component\": \"Azure Container Registry\"}"

@@ -23,7 +23,7 @@ export const TRAFFIC_LIGHT_LABELS = {
 
 export const NAVIGATION_ITEMS = [
   { id: "overview", label: "Overview", icon: "LayoutDashboard" },
-  { id: "pipelines", label: "Pipelines & CI/CD", icon: "GitBranch" },
+  { id: "pipelines", label: "CI/CD Pipeline Logs", icon: "GitBranch" },
   { id: "deployments", label: "Deployments", icon: "CloudUpload" },
   { id: "models", label: "Model Registry", icon: "Cpu" },
   { id: "gatekeeper", label: "Traffic Light PRs", icon: "ShieldCheck" },

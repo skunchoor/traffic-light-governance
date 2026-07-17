@@ -34,7 +34,7 @@ export const DeploymentsPage = () => {
             <option value="staging">Staging</option>
           </select>
           <button
-            onClick={reload}
+            onClick={() => reload(true)}
             style={{
               padding: "0.5rem 1rem",
               borderRadius: "8px",
@@ -51,9 +51,9 @@ export const DeploymentsPage = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading && !deployments ? (
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading deployments...</div>
-      ) : error ? (
+      ) : error && !deployments ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading deployments: {error}</div>
       ) : !deployments || deployments.length === 0 ? (
         <EmptyState title="No deployments recorded" description="Deployments to Azure or Databricks will appear here once executed." />

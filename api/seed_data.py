@@ -17,6 +17,9 @@ async def seed_if_empty(session: AsyncSession):
 
     now = datetime.now(timezone.utc)
     
+    projects_list = ["skunchoor/traffic-light-governance", "skunchoor/mlops-pipeline", "skunchoor/ad-genie-ctr"]
+    components_list = ["Azure Container Registry", "Azure AKS", "Databricks"]
+
     # 1. Pipeline Runs & Security Scans
     workflows = ["Traffic Light Gatekeeper", "Deploy to Azure", "Databricks Pipeline", "Model Promotion"]
     branches = ["main", "feature/auth-revamp", "fix/security-audit", "feature/data-pipeline"]
@@ -29,11 +32,13 @@ async def seed_if_empty(session: AsyncSession):
         duration = round(random.uniform(120, 480), 1)
         finish = start + timedelta(seconds=duration)
         status = random.choices(["success", "failed"], weights=[85, 15])[0]
+        prun_project = random.choice(projects_list)
         
         prun = PipelineRun(
             workflow_name=random.choice(workflows),
             run_id=f"run_100{i}",
             run_number=100 + i,
+            project=prun_project,
             status=status,
             trigger=random.choice(["push", "pull_request", "workflow_dispatch"]),
             branch=random.choice(branches),
@@ -62,11 +67,12 @@ async def seed_if_empty(session: AsyncSession):
             scan = SecurityScan(
                 pipeline_run_id=prun.id,
                 tool_name=tool,
+                project=prun_project,
                 findings_count=high + med + low,
                 high_count=high,
                 medium_count=med,
                 low_count=low,
-                report_url=f"https://github.com/skunchoor/traffic-light-governance/actions/runs/100{i}",
+                report_url=f"https://github.com/{prun_project}/actions/runs/100{i}",
                 scanned_at=finish
             )
             session.add(scan)
@@ -86,7 +92,7 @@ async def seed_if_empty(session: AsyncSession):
         g_report = GatekeeperReport(
             pr_number=80 + i,
             pr_title=f"Feature update #{80+i}: {random.choice(['model config tuning', 'api performance boost', 'docker optimization', 'etl pipeline fix'])}",
-            repo="skunchoor/traffic-light-governance",
+            repo=random.choice(projects_list),
             traffic_light=light,
             test_passed=(light != "RED" or random.random() > 0.5),
             test_failures=0 if light != "RED" else random.randint(1, 3),
@@ -103,12 +109,15 @@ async def seed_if_empty(session: AsyncSession):
     for i, ver in enumerate(versions):
         t_delta = timedelta(days=int((len(versions)-i) * 4))
         deployed_at = now - t_delta
+        dep_proj = random.choice(projects_list)
         
         # Staging deploy
         staging = Deployment(
             environment="staging",
             version=f"{ver}-rc.1",
             image_tag=f"trafficlightacr.azurecr.io/app:{ver}-rc.1",
+            project=dep_proj,
+            component=random.choice(components_list),
             status="success",
             deployed_by="github-actions[bot]",
             azure_resource="aca-traffic-light-staging",
@@ -123,6 +132,8 @@ async def seed_if_empty(session: AsyncSession):
             environment="production",
             version=ver,
             image_tag=f"trafficlightacr.azurecr.io/app:{ver}",
+            project=dep_proj,
+            component=random.choice(components_list),
             status=prod_status,
             deployed_by="sunil",
             azure_resource="aca-traffic-light-prod",
@@ -146,6 +157,7 @@ async def seed_if_empty(session: AsyncSession):
         session.add(ModelPromotion(
             model_name=m_name,
             model_version=m_ver,
+            project=random.choice(projects_list),
             from_stage=f_stg,
             to_stage=t_stg,
             metrics={

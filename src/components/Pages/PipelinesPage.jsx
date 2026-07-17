@@ -35,7 +35,7 @@ export const PipelinesPage = () => {
             <option value="running">Running</option>
           </select>
           <button
-            onClick={reload}
+            onClick={() => reload(true)}
             style={{
               padding: "0.5rem 1rem",
               borderRadius: "8px",
@@ -52,9 +52,9 @@ export const PipelinesPage = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading && !pipelines ? (
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading pipelines...</div>
-      ) : error ? (
+      ) : error && !pipelines ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading pipelines: {error}</div>
       ) : !pipelines || pipelines.length === 0 ? (
         <EmptyState title="No pipeline runs found" description="Push commits to GitHub or run automated workflows to see execution history." />

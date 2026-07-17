@@ -25,7 +25,7 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
-          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"running\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 0}"
+          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"running\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 0, \"project\": \"${{ github.repository }}\"}"
 
   # Job 2: Databricks Pipeline Deployment
   databricks-deploy:
@@ -92,4 +92,4 @@ jobs:
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
         run: |
           STATUS="${{ needs.databricks-deploy.result == 'success' && needs.model-promotion.result == 'success' && 'success' || 'failed' }}"
-          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"$STATUS\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 125.4}"
+          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"$STATUS\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 125.4, \"project\": \"${{ github.repository }}\"}"

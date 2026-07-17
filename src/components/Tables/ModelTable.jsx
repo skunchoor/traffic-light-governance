@@ -9,6 +9,7 @@ export const ModelTable = ({ models = [] }) => {
         <thead>
           <tr style={{ borderBottom: "1px solid var(--border-card)", background: "rgba(255,255,255,0.02)", color: "var(--text-secondary)" }}>
             <th style={{ padding: "1rem" }}>Governance Decision</th>
+            <th style={{ padding: "1rem" }}>Project</th>
             <th style={{ padding: "1rem" }}>Model Name & Version</th>
             <th style={{ padding: "1rem" }}>Stage Transition</th>
             <th style={{ padding: "1rem" }}>Evaluation Metrics</th>
@@ -21,6 +22,11 @@ export const ModelTable = ({ models = [] }) => {
             <tr key={mod.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
               <td style={{ padding: "1rem" }}>
                 <TrafficLightBadge light={mod.decision} size="sm" />
+              </td>
+              <td style={{ padding: "1rem" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", padding: "0.2rem 0.5rem", background: "rgba(255,255,255,0.04)", borderRadius: "4px", color: "var(--text-primary)" }}>
+                  {mod.project || "skunchoor/traffic-light-governance"}
+                </span>
               </td>
               <td style={{ padding: "1rem" }}>
                 <strong style={{ color: "var(--text-primary)" }}>{mod.model_name}</strong>
@@ -40,7 +46,7 @@ export const ModelTable = ({ models = [] }) => {
               </td>
               <td style={{ padding: "1rem", color: "var(--text-secondary)", maxWidth: "250px" }}>
                 <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {mod.gatekeeper_reason || "Passed traffic light evaluation"}
+                  {mod.decision_reason || mod.gatekeeper_reason || "Passed traffic light evaluation"}
                 </div>
               </td>
               <td style={{ padding: "1rem", color: "var(--text-muted)" }}>{formatRelativeTime(mod.promoted_at)}</td>

@@ -26,6 +26,7 @@ MODEL_VERSION = os.getenv("MODEL_VERSION", "v3.4.1")
 FROM_STAGE = os.getenv("FROM_STAGE", "Staging")
 TARGET_STAGE = os.getenv("TARGET_STAGE", "Production")
 TRAFFIC_LIGHT_DECISION = os.getenv("TRAFFIC_LIGHT", "GREEN")
+PROJECT = os.getenv("GITHUB_REPOSITORY", "skunchoor/traffic-light-governance")
 
 # Simulated Model Metrics
 METRICS = {
@@ -60,6 +61,7 @@ def evaluate_and_promote():
     notify_backend("api/v1/models", {
         "model_name": MODEL_NAME,
         "model_version": MODEL_VERSION,
+        "project": PROJECT,
         "from_stage": FROM_STAGE,
         "to_stage": to_stage,
         "decision": decision,

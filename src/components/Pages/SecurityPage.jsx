@@ -16,10 +16,12 @@ export const SecurityPage = ({ summary }) => {
     { name: "Gitleaks", desc: "Fast secret scanner detecting hardcoded API keys, tokens, and passwords in git history" }
   ];
 
-  const barData = Object.keys(sec).map((key) => ({
-    name: key.toUpperCase(),
-    value: sec[key]?.total || 0
-  }));
+  const barData = Object.keys(sec)
+    .filter((key) => key !== "by_project")
+    .map((key) => ({
+      name: key.toUpperCase(),
+      value: sec[key]?.total || 0
+    }));
 
   return (
     <div>

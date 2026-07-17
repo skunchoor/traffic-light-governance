@@ -26,6 +26,8 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "Customer Churn Prediction ETL Pipeline
 COMMIT_SHA = os.getenv("GITHUB_SHA", "commit-sha-7890")
 ACTOR = os.getenv("GITHUB_ACTOR", "github-actions")
 TRAFFIC_LIGHT = os.getenv("TRAFFIC_LIGHT", "GREEN") # Passed from prior gatekeeper step or env
+PROJECT = os.getenv("GITHUB_REPOSITORY", "skunchoor/traffic-light-governance")
+COMPONENT = "Databricks"
 
 
 def deploy_to_databricks():
@@ -41,7 +43,9 @@ def deploy_to_databricks():
             "commit_sha": COMMIT_SHA,
             "deployer": ACTOR,
             "status": "failed",
-            "target_url": DATABRICKS_HOST
+            "target_url": DATABRICKS_HOST,
+            "project": PROJECT,
+            "component": COMPONENT
         })
         sys.exit(1)
 
@@ -55,7 +59,9 @@ def deploy_to_databricks():
         "commit_sha": COMMIT_SHA,
         "deployer": ACTOR,
         "status": "in-progress",
-        "target_url": DATABRICKS_HOST
+        "target_url": DATABRICKS_HOST,
+        "project": PROJECT,
+        "component": COMPONENT
     })
 
     # 3. Execute Databricks CLI / Job triggering logic
@@ -72,7 +78,9 @@ def deploy_to_databricks():
         "commit_sha": COMMIT_SHA,
         "deployer": ACTOR,
         "status": status,
-        "target_url": f"{DATABRICKS_HOST}/#job/1024/runs/1"
+        "target_url": f"{DATABRICKS_HOST}/#job/1024/runs/1",
+        "project": PROJECT,
+        "component": COMPONENT
     })
 
 
