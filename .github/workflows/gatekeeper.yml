@@ -110,7 +110,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Bot Dependencies
-        run: uv pip install --system PyGithub junitparser
+        run: uv pip install --system PyGithub junitparser requests
 
       - name: Run Gatekeeper Evaluation & Notify Dashboard
         id: gatekeeper
@@ -120,4 +120,4 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
-        run: uv run python .github/scripts/gatekeeper.py
+        run: uv run --with junitparser --with PyGithub --with requests python .github/scripts/gatekeeper.py

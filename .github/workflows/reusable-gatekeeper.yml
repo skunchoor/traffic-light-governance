@@ -199,4 +199,4 @@ jobs:
           BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
           BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
           GITHUB_REPOSITORY: ${{ inputs.project_override || github.repository }}
-        run: uv run python .tlg-governance/.github/scripts/gatekeeper.py
+        run: uv run --with junitparser --with PyGithub --with requests python .tlg-governance/.github/scripts/gatekeeper.py

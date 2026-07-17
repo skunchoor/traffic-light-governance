@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "junitparser>=3.1.0",
+#     "PyGithub>=2.1.0",
+#     "requests>=2.31.0",
+# ]
+# ///
 """
 Enhanced Traffic Light Gatekeeper Script
 
