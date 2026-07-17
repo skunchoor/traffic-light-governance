@@ -59,8 +59,6 @@ on:
         required: false
       BACKEND_API_KEY:
         required: false
-      GITHUB_TOKEN:
-        required: false
 
 jobs:
   run-tests:
