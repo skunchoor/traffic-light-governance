@@ -7,17 +7,34 @@ from api.models import (
 )
 
 
+async def _has_project_data(session: AsyncSession, project: str) -> bool:
+    res = await session.execute(select(SecurityScan.id).where(SecurityScan.project == project).limit(1))
+    return res.scalars().first() is not None
+
+
 async def seed_if_empty(session: AsyncSession):
     """
-    Check if DB is empty and seed with realistic historical data across last 30 days.
+    Check if DB is empty or missing multi-project data and seed realistic historical data across last 30 days.
     """
-    check = await session.execute(select(PipelineRun).limit(1))
-    if check.scalars().first() is not None:
-        return  # Already seeded
+    all_projects = [
+        "skunchoor/traffic-light-governance",
+        "skunchoor/flowbuilder",
+        "skunchoor/vitalflow",
+        "skunchoor/three-depths",
+        "skunchoor/ad-genie",
+        "skunchoor/retail-lens"
+    ]
+    missing_projects = []
+    for p in all_projects:
+        if not await _has_project_data(session, p):
+            missing_projects.append(p)
+
+    if not missing_projects:
+        return  # All projects already seeded
 
     now = datetime.now(timezone.utc)
     
-    projects_list = ["skunchoor/traffic-light-governance", "skunchoor/mlops-pipeline", "skunchoor/ad-genie-ctr"]
+    projects_list = missing_projects
     components_list = ["Azure Container Registry", "Azure AKS", "Databricks"]
 
     # 1. Pipeline Runs & Security Scans

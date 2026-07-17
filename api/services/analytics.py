@@ -104,7 +104,17 @@ async def get_dashboard_summary_data(session: AsyncSession) -> Dict[str, Any]:
     sec_res = await session.execute(select(SecurityScan))
     scans = sec_res.scalars().all()
     sec_summary: Dict[str, Any] = {}
-    by_project: Dict[str, Dict[str, int]] = {}
+    default_org_projects = [
+        "skunchoor/traffic-light-governance",
+        "skunchoor/flowbuilder",
+        "skunchoor/vitalflow",
+        "skunchoor/three-depths",
+        "skunchoor/ad-genie",
+        "skunchoor/retail-lens"
+    ]
+    by_project: Dict[str, Dict[str, int]] = {
+        p: {"high": 0, "medium": 0, "low": 0, "total": 0} for p in default_org_projects
+    }
     for s in scans:
         if s.tool_name not in sec_summary:
             sec_summary[s.tool_name] = {"high": 0, "medium": 0, "low": 0, "total": 0}
