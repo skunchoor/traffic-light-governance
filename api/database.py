@@ -8,9 +8,9 @@ db_url = settings.DATABASE_URL
 connect_args = {}
 
 # Normalize PostgreSQL schemes for asyncpg (Neon, Supabase, Vercel Postgres)
-if db_url.startswith("postgres://") or db_url.startswith("postgresql://"):
+if db_url.startswith("postgres://") or db_url.startswith("postgresql://") or db_url.startswith("postgresql+asyncpg://") or db_url.startswith("postgres+asyncpg://"):
     if not db_url.startswith("postgresql+asyncpg://"):
-        db_url = re.sub(r"^postgres(?:ql)?://", "postgresql+asyncpg://", db_url)
+        db_url = re.sub(r"^postgres(?:ql)?(?:\+asyncpg)?://", "postgresql+asyncpg://", db_url)
     # Strip ALL libpq query parameters (like ?sslmode=require&channel_binding=prefer&options=...)
     # since asyncpg does not accept libpq query string kwargs like channel_binding or sslmode in connect()
     if "?" in db_url:
