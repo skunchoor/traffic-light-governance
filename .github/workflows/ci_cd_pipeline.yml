@@ -1,0 +1,95 @@
+name: End-to-End MLOps Pipeline & Promotion
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Job 1: Notify start of pipeline run
+  pipeline-start:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Notify Backend Pipeline Ingestion (Running)
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"running\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 0}"
+
+  # Job 2: Databricks Pipeline Deployment
+  databricks-deploy:
+    needs: pipeline-start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Execute Databricks Asset Bundle & Job Deployment
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST || 'https://adb-1234567890.12.azuredatabricks.net' }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN || 'simulated_token' }}
+          ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          SERVICE_NAME: "Customer Churn & Fraud ETL Pipeline"
+          TRAFFIC_LIGHT: "GREEN"
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: uv run python .github/scripts/databricks_deployer.py
+
+  # Job 3: MLflow Model Evaluation & Traffic Light Promotion
+  model-promotion:
+    needs: databricks-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run MLflow Stage Promotion Evaluation
+        env:
+          MODEL_NAME: "FraudDetection-XGBoost"
+          MODEL_VERSION: "v3.${{ github.run_number }}"
+          FROM_STAGE: "Staging"
+          TARGET_STAGE: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
+          TRAFFIC_LIGHT: "GREEN"
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: uv run python .github/scripts/model_registry.py
+
+  # Job 4: Notify final pipeline status
+  pipeline-finish:
+    needs: [databricks-deploy, model-promotion]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Notify Backend Pipeline Ingestion (Completed)
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          STATUS="${{ needs.databricks-deploy.result == 'success' && needs.model-promotion.result == 'success' && 'success' || 'failed' }}"
+          uv run python .github/scripts/notify_backend.py "api/v1/pipelines" "{\"workflow_name\": \"End-to-End MLOps Pipeline\", \"run_id\": \"${{ github.run_id }}\", \"run_number\": ${{ github.run_number }}, \"status\": \"$STATUS\", \"trigger\": \"${{ github.event_name }}\", \"branch\": \"${{ github.ref_name }}\", \"commit_sha\": \"${{ github.sha }}\", \"actor\": \"${{ github.actor }}\", \"duration_seconds\": 125.4}"

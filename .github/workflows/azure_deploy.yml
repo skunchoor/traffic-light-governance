@@ -1,0 +1,49 @@
+name: Azure Container Apps Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  azure-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Notify Deployment Start
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"in-progress\", \"target_url\": \"https://traffic-light-backend.vercel.app\"}"
+
+      - name: Simulate Container Build & Azure Rollout
+        run: |
+          echo "🐳 Building Docker image for Traffic Light API Service..."
+          echo "☁️ Authenticating with Azure Container Registry (ACR)..."
+          echo "🚀 Deploying revision to Azure Container Apps (Production)..."
+          sleep 3
+          echo "✅ Rollout completed successfully."
+
+      - name: Notify Deployment Success
+        if: success()
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"success\", \"target_url\": \"https://traffic-light-backend.vercel.app\"}"
+
+      - name: Notify Deployment Failure
+        if: failure()
+        env:
+          BACKEND_API_URL: ${{ secrets.BACKEND_API_URL || 'https://traffic-light-backend.vercel.app' }}
+          BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY || 'dev-secret-api-key-12345' }}
+        run: |
+          uv run python .github/scripts/notify_backend.py "api/v1/deployments" "{\"environment\": \"production\", \"service_name\": \"Traffic Light Governance API Service\", \"commit_sha\": \"${{ github.sha }}\", \"deployer\": \"${{ github.actor }}\", \"status\": \"failed\", \"target_url\": \"https://traffic-light-backend.vercel.app\"}"

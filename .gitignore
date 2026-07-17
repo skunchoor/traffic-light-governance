@@ -205,3 +205,41 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ==============================================================================
+# Traffic Light Governance: Full-Stack & Observability Exclusions
+# ==============================================================================
+
+# Node.js & Vite React Dashboard SPA
+node_modules/
+dist/
+dist-ssr/
+*.local
+.npm/
+.eslintcache
+
+# Vercel Serverless Deployment
+.vercel/
+
+# Generated Security Scanner & Gatekeeper Reports
+bandit.json
+safety.json
+pip-audit.json
+semgrep.json
+snyk.json
+trivy.json
+gitleaks.json
+test-results.xml
+
+# Local SQLite & Turso Databases
+*.db
+*.sqlite
+*.sqlite3
+governance.db
+implementation_plan.md
+
+# OS & Editor cache
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
