@@ -11,12 +11,10 @@ connect_args = {}
 if db_url.startswith("postgres://") or db_url.startswith("postgresql://"):
     if not db_url.startswith("postgresql+asyncpg://"):
         db_url = re.sub(r"^postgres(?:ql)?://", "postgresql+asyncpg://", db_url)
-    # Strip ?sslmode=... or &sslmode=... which asyncpg doesn't accept in URL query string
-    if "sslmode=" in db_url or "ssl=" in db_url:
-        db_url = re.sub(r"[?&]ssl(?:mode)?=[^&]+", "", db_url)
-        db_url = db_url.rstrip("?&")
-        if "?" not in db_url and "&" in db_url:
-            db_url = db_url.replace("&", "?", 1)
+    # Strip ALL libpq query parameters (like ?sslmode=require&channel_binding=prefer&options=...)
+    # since asyncpg does not accept libpq query string kwargs like channel_binding or sslmode in connect()
+    if "?" in db_url:
+        db_url = db_url.split("?")[0]
     connect_args = {"ssl": "require"}
 
 # Normalize SQLite schemes
