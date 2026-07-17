@@ -56,6 +56,9 @@ Base = declarative_base()
 _db_initialized = False
 
 
+import traceback
+
+
 async def get_db():
     global _db_initialized
     if not _db_initialized:
@@ -66,8 +69,8 @@ async def get_db():
                 await seed_if_empty(seed_session)
             _db_initialized = True
         except Exception as e:
-            if settings.DEBUG:
-                print(f"Error seeding database on startup: {e}")
+            print(f"⚠️ Lazy DB initialization/seeding error: {e}", flush=True)
+            traceback.print_exc()
 
     async with AsyncSessionLocal() as session:
         try:

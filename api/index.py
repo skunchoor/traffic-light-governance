@@ -7,6 +7,8 @@ from api.seed_data import seed_if_empty
 from api.routers import webhooks, pipelines, deployments, models, gatekeeper, metrics
 
 
+import traceback
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize DB and run seeder on startup gracefully without failing Vercel lambda cold boot
@@ -15,7 +17,8 @@ async def lifespan(app: FastAPI):
         async with AsyncSessionLocal() as session:
             await seed_if_empty(session)
     except Exception as e:
-        print(f"Lifespan startup notice: {e}")
+        print(f"⚠️ Lifespan database/seeding notice: {e}", flush=True)
+        traceback.print_exc()
     yield
 
 
