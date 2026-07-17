@@ -4,10 +4,17 @@ import { fetchGatekeeperReports } from "../../utils/api";
 import { GatekeeperTable } from "../Tables/GatekeeperTable";
 import { EmptyState } from "../Common/EmptyState";
 
-export const GatekeeperPage = () => {
+export const GatekeeperPage = ({ selectedProjects = [], availableProjects = [] }) => {
   const [lightFilter, setLightFilter] = useState("");
   const fetcher = useCallback(() => fetchGatekeeperReports(lightFilter), [lightFilter]);
   const { data: reports, loading, error, reload } = useApi(fetcher, [lightFilter]);
+
+  const isAllSelected = selectedProjects.length === 0 || selectedProjects.length === availableProjects.length;
+  const filteredReports = (reports || []).filter((rep) => {
+    if (isAllSelected) return true;
+    if (selectedProjects.includes("__NONE__")) return false;
+    return selectedProjects.includes(rep.project || "skunchoor/traffic-light-governance");
+  });
 
   return (
     <div>
@@ -56,10 +63,10 @@ export const GatekeeperPage = () => {
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading gatekeeper reports...</div>
       ) : error && !reports ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading reports: {error}</div>
-      ) : !reports || reports.length === 0 ? (
-        <EmptyState title="No governance evaluations yet" description="Submit Pull Requests to trigger the automated Traffic Light evaluation." />
+      ) : filteredReports.length === 0 ? (
+        <EmptyState title="No governance reports found" description="No gatekeeper reports match the current project or traffic light filter." />
       ) : (
-        <GatekeeperTable reports={reports} />
+        <GatekeeperTable reports={filteredReports} />
       )}
     </div>
   );

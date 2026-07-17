@@ -4,7 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { useSSE } from "../../hooks/useSSE";
 import { Toast } from "../Common/Toast";
 
-export const Layout = ({ children, activeTab, setActiveTab }) => {
+export const Layout = ({ children, activeTab, setActiveTab, selectedProjects, setSelectedProjects, availableProjects }) => {
   const { lastEvent, isConnected } = useSSE();
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -17,7 +17,12 @@ export const Layout = ({ children, activeTab, setActiveTab }) => {
 
   return (
     <div className="app-container" style={{ flexDirection: "column" }}>
-      <Header isConnected={isConnected} />
+      <Header
+        isConnected={isConnected}
+        selectedProjects={selectedProjects}
+        setSelectedProjects={setSelectedProjects}
+        availableProjects={availableProjects}
+      />
       <div style={{ display: "flex", flex: 1 }}>
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="main-content">

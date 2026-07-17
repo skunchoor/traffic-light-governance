@@ -4,10 +4,17 @@ import { fetchModels } from "../../utils/api";
 import { ModelTable } from "../Tables/ModelTable";
 import { EmptyState } from "../Common/EmptyState";
 
-export const ModelsPage = () => {
+export const ModelsPage = ({ selectedProjects = [], availableProjects = [] }) => {
   const [decisionFilter, setDecisionFilter] = useState("");
   const fetcher = useCallback(() => fetchModels(decisionFilter), [decisionFilter]);
   const { data: models, loading, error, reload } = useApi(fetcher, [decisionFilter]);
+
+  const isAllSelected = selectedProjects.length === 0 || selectedProjects.length === availableProjects.length;
+  const filteredModels = (models || []).filter((mod) => {
+    if (isAllSelected) return true;
+    if (selectedProjects.includes("__NONE__")) return false;
+    return selectedProjects.includes(mod.project || "skunchoor/traffic-light-governance");
+  });
 
   return (
     <div>
@@ -56,10 +63,10 @@ export const ModelsPage = () => {
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading model promotions...</div>
       ) : error && !models ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading model promotions: {error}</div>
-      ) : !models || models.length === 0 ? (
-        <EmptyState title="No models promoted" description="Train and evaluate models via Databricks / MLflow pipelines to record promotions." />
+      ) : filteredModels.length === 0 ? (
+        <EmptyState title="No model promotions found" description="No model promotions match the current project or decision filter." />
       ) : (
-        <ModelTable models={models} />
+        <ModelTable models={filteredModels} />
       )}
     </div>
   );

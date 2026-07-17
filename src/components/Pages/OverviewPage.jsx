@@ -8,11 +8,27 @@ import { ModelPromotionFlow } from "../Dashboard/ModelPromotionFlow";
 import { LiveActivityFeed } from "../Dashboard/LiveActivityFeed";
 import { DonutChart } from "../Charts/DonutChart";
 
-export const OverviewPage = ({ summary, liveEvents }) => {
+export const OverviewPage = ({ summary, liveEvents, selectedProjects = [], availableProjects = [] }) => {
   const s = summary || {};
   const dora = s.dora_metrics || {};
   const gatekeeper = s.gatekeeper_summary || {};
   const sec = s.security_summary || {};
+
+  const isAllSelected = selectedProjects.length === 0 || selectedProjects.length === availableProjects.length;
+
+  const filterByProject = (items) => {
+    if (!items || !Array.isArray(items)) return [];
+    return items.filter((item) => {
+      if (isAllSelected) return true;
+      if (selectedProjects.includes("__NONE__")) return false;
+      return selectedProjects.includes(item.project || "skunchoor/traffic-light-governance");
+    });
+  };
+
+  const filteredDeployments = filterByProject(s.recent_deployments || []);
+  const filteredPipelines = filterByProject(s.recent_pipelines || []);
+  const filteredModels = filterByProject(s.recent_models || []);
+  const filteredEvents = filterByProject(liveEvents || []);
 
   return (
     <div>
@@ -70,15 +86,15 @@ export const OverviewPage = ({ summary, liveEvents }) => {
       </div>
 
       <div className="grid-2">
-        <DeploymentChart deployments={s.recent_deployments || []} />
+        <DeploymentChart deployments={filteredDeployments} />
         <SecurityRadar summary={sec} />
       </div>
 
       <div className="grid-2">
-        <PipelineTimeline pipelines={s.recent_pipelines || []} />
+        <PipelineTimeline pipelines={filteredPipelines} />
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          <ModelPromotionFlow promotions={s.recent_models || []} />
-          <LiveActivityFeed events={liveEvents || []} />
+          <ModelPromotionFlow promotions={filteredModels} />
+          <LiveActivityFeed events={filteredEvents} />
         </div>
       </div>
     </div>

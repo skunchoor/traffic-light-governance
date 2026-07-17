@@ -4,10 +4,17 @@ import { fetchDeployments } from "../../utils/api";
 import { DeploymentTable } from "../Tables/DeploymentTable";
 import { EmptyState } from "../Common/EmptyState";
 
-export const DeploymentsPage = () => {
+export const DeploymentsPage = ({ selectedProjects = [], availableProjects = [] }) => {
   const [envFilter, setEnvFilter] = useState("");
   const fetcher = useCallback(() => fetchDeployments(envFilter), [envFilter]);
   const { data: deployments, loading, error, reload } = useApi(fetcher, [envFilter]);
+
+  const isAllSelected = selectedProjects.length === 0 || selectedProjects.length === availableProjects.length;
+  const filteredDeployments = (deployments || []).filter((dep) => {
+    if (isAllSelected) return true;
+    if (selectedProjects.includes("__NONE__")) return false;
+    return selectedProjects.includes(dep.project || "skunchoor/traffic-light-governance");
+  });
 
   return (
     <div>
@@ -55,10 +62,10 @@ export const DeploymentsPage = () => {
         <div style={{ color: "var(--text-secondary)", padding: "3rem", textAlign: "center" }}>Loading deployments...</div>
       ) : error && !deployments ? (
         <div style={{ color: "#ef4444", padding: "2rem" }}>Error loading deployments: {error}</div>
-      ) : !deployments || deployments.length === 0 ? (
-        <EmptyState title="No deployments recorded" description="Deployments to Azure or Databricks will appear here once executed." />
+      ) : filteredDeployments.length === 0 ? (
+        <EmptyState title="No deployments found" description="No deployments match the current project or environment filter." />
       ) : (
-        <DeploymentTable deployments={deployments} />
+        <DeploymentTable deployments={filteredDeployments} />
       )}
     </div>
   );

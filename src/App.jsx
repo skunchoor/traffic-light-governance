@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Layout } from "./components/Layout/Layout";
 import { OverviewPage } from "./components/Pages/OverviewPage";
 import { PipelinesPage } from "./components/Pages/PipelinesPage";
@@ -12,11 +12,32 @@ import { useSSE } from "./hooks/useSSE";
 import { fetchSummary } from "./utils/api";
 import "./App.css";
 
+const DEFAULT_PROJECTS = [
+  "skunchoor/traffic-light-governance",
+  "skunchoor/flowbuilder",
+  "skunchoor/vitalflow",
+  "skunchoor/three-depths",
+  "skunchoor/ad-genie",
+  "skunchoor/retail-lens"
+];
+
 export function App() {
   const [activeTab, setActiveTab] = useState("overview");
   const { data: summary, loading, error, reload, setData: setSummary } = useApi(fetchSummary, []);
   const { lastEvent } = useSSE();
   const [liveEvents, setLiveEvents] = useState([]);
+  const [selectedProjects, setSelectedProjects] = useState([]); // [] means All Projects by default
+
+  const availableProjects = useMemo(() => {
+    const set = new Set(DEFAULT_PROJECTS);
+    if (summary?.security_summary?.by_project) {
+      Object.keys(summary.security_summary.by_project).forEach((p) => set.add(p));
+    }
+    if (summary?.dora_metrics?.by_project) {
+      Object.keys(summary.dora_metrics.by_project).forEach((p) => set.add(p));
+    }
+    return Array.from(set);
+  }, [summary]);
 
   // Auto refresh summary every 30 seconds
   useAutoRefresh(reload, 30000);
@@ -75,24 +96,30 @@ export function App() {
 
     switch (activeTab) {
       case "overview":
-        return <OverviewPage summary={summary} liveEvents={liveEvents} />;
+        return <OverviewPage summary={summary} liveEvents={liveEvents} selectedProjects={selectedProjects} availableProjects={availableProjects} />;
       case "pipelines":
-        return <PipelinesPage />;
+        return <PipelinesPage selectedProjects={selectedProjects} availableProjects={availableProjects} />;
       case "deployments":
-        return <DeploymentsPage />;
+        return <DeploymentsPage selectedProjects={selectedProjects} availableProjects={availableProjects} />;
       case "models":
-        return <ModelsPage />;
+        return <ModelsPage selectedProjects={selectedProjects} availableProjects={availableProjects} />;
       case "gatekeeper":
-        return <GatekeeperPage />;
+        return <GatekeeperPage selectedProjects={selectedProjects} availableProjects={availableProjects} />;
       case "security":
-        return <SecurityPage summary={summary} />;
+        return <SecurityPage summary={summary} selectedProjects={selectedProjects} availableProjects={availableProjects} />;
       default:
-        return <OverviewPage summary={summary} liveEvents={liveEvents} />;
+        return <OverviewPage summary={summary} liveEvents={liveEvents} selectedProjects={selectedProjects} availableProjects={availableProjects} />;
     }
   };
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+    <Layout
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      selectedProjects={selectedProjects}
+      setSelectedProjects={setSelectedProjects}
+      availableProjects={availableProjects}
+    >
       {renderContent()}
     </Layout>
   );
