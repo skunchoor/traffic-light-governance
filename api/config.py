@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database
-    # Default to local SQLite file if TURSO_DATABASE_URL is not set
-    DATABASE_URL: str = os.getenv("TURSO_DATABASE_URL", "sqlite+aiosqlite:///./backend_data.db")
+    # Default to /tmp directory if running inside Vercel serverless (read-only filesystem except /tmp)
+    _default_db: str = "sqlite+aiosqlite:////tmp/backend_data.db" if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") else "sqlite+aiosqlite:///./backend_data.db"
+    DATABASE_URL: str = os.getenv("TURSO_DATABASE_URL", _default_db)
     TURSO_AUTH_TOKEN: str = os.getenv("TURSO_AUTH_TOKEN", "")
 
     # Authentication

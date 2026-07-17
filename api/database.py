@@ -6,15 +6,21 @@ from api.config import settings
 # If DATABASE_URL starts with libsql:// or sqlite://, adjust for async SQLAlchemy
 db_url = settings.DATABASE_URL
 if db_url.startswith("libsql://") or db_url.startswith("https://"):
-    # When using Turso/libsql with SQLAlchemy async, we use sqlite+aiosqlite or custom driver if local
-    # For compatibility across Vercel serverless and Turso, we ensure valid async engine connection string
-    db_url = db_url.replace("libsql://", "sqlite+aiosqlite:///")
+    # If on Vercel and libsql URL is given without custom driver, safely fallback or use /tmp cache
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        db_url = "sqlite+aiosqlite:////tmp/backend_data.db"
+    else:
+        db_url = db_url.replace("libsql://", "sqlite+aiosqlite:///")
 elif db_url.startswith("sqlite://") and not db_url.startswith("sqlite+aiosqlite://"):
     db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
 
 # Ensure directory exists for local SQLite
 if ":///" in db_url and "aiosqlite" in db_url:
     path = db_url.split(":///")[1]
+    # On Vercel, force path inside /tmp if it's not already
+    if (os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")) and not path.startswith("/tmp"):
+        path = os.path.join("/tmp", os.path.basename(path))
+        db_url = f"sqlite+aiosqlite:///{path}"
     dir_name = os.path.dirname(path)
     if dir_name and not os.path.exists(dir_name):
         os.makedirs(dir_name, exist_ok=True)
