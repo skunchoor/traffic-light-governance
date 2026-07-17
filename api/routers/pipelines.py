@@ -39,8 +39,16 @@ async def get_pipeline(run_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=PipelineRunResponse, dependencies=[Depends(verify_api_key)])
 async def create_pipeline(payload: PipelineRunCreate, db: AsyncSession = Depends(get_db)):
-    prun = PipelineRun(**payload.model_dump())
-    db.add(prun)
+    res = await db.execute(select(PipelineRun).where(PipelineRun.run_id == payload.run_id))
+    existing = res.scalars().first()
+    if existing:
+        for k, v in payload.model_dump(exclude_unset=True).items():
+            if v is not None:
+                setattr(existing, k, v)
+        prun = existing
+    else:
+        prun = PipelineRun(**payload.model_dump())
+        db.add(prun)
     await db.commit()
     await db.refresh(prun)
 

@@ -34,19 +34,32 @@ async def ingest_github_webhook(request: Request, db: AsyncSession = Depends(get
     broadcast_type = event_type
 
     if event_type == "pipeline":
-        prun = PipelineRun(
-            workflow_name=data.get("workflow_name", "Unknown Workflow"),
-            run_id=str(data.get("run_id", f"run_{datetime.now(timezone.utc).timestamp()}")),
-            run_number=data.get("run_number"),
-            status=data.get("status", "running"),
-            trigger=data.get("trigger", "push"),
-            branch=data.get("branch", "main"),
-            commit_sha=data.get("commit_sha"),
-            actor=data.get("actor", "github-actions"),
-            duration_seconds=data.get("duration_seconds"),
-            stages=data.get("stages", [])
-        )
-        db.add(prun)
+        run_id_val = str(data.get("run_id", f"run_{datetime.now(timezone.utc).timestamp()}"))
+        res = await db.execute(select(PipelineRun).where(PipelineRun.run_id == run_id_val))
+        prun = res.scalars().first()
+        if prun:
+            prun.status = data.get("status", prun.status)
+            prun.duration_seconds = data.get("duration_seconds", prun.duration_seconds)
+            if data.get("stages"):
+                prun.stages = data.get("stages")
+            if data.get("commit_sha"):
+                prun.commit_sha = data.get("commit_sha")
+            if data.get("branch"):
+                prun.branch = data.get("branch")
+        else:
+            prun = PipelineRun(
+                workflow_name=data.get("workflow_name", "Unknown Workflow"),
+                run_id=run_id_val,
+                run_number=data.get("run_number"),
+                status=data.get("status", "running"),
+                trigger=data.get("trigger", "push"),
+                branch=data.get("branch", "main"),
+                commit_sha=data.get("commit_sha"),
+                actor=data.get("actor", "github-actions"),
+                duration_seconds=data.get("duration_seconds"),
+                stages=data.get("stages", [])
+            )
+            db.add(prun)
         await db.flush()
         saved_id = prun.id
 
@@ -112,17 +125,25 @@ async def ingest_github_webhook(request: Request, db: AsyncSession = Depends(get
         saved_id = mp.id
 
     elif event_type == "databricks_pipeline":
-        db_run = DatabricksPipelineRun(
-            job_id=str(data.get("job_id", "")),
-            run_id=str(data.get("run_id", "")),
-            pipeline_name=data.get("pipeline_name", "databricks_dlt"),
-            status=data.get("status", "RUNNING"),
-            duration_seconds=data.get("duration_seconds"),
-            output_rows=data.get("output_rows"),
-            notebook_path=data.get("notebook_path"),
-            cluster_id=data.get("cluster_id")
-        )
-        db.add(db_run)
+        run_id_val = str(data.get("run_id", ""))
+        res = await db.execute(select(DatabricksPipelineRun).where(DatabricksPipelineRun.run_id == run_id_val))
+        db_run = res.scalars().first()
+        if db_run and run_id_val:
+            db_run.status = data.get("status", db_run.status)
+            db_run.duration_seconds = data.get("duration_seconds", db_run.duration_seconds)
+            db_run.output_rows = data.get("output_rows", db_run.output_rows)
+        else:
+            db_run = DatabricksPipelineRun(
+                job_id=str(data.get("job_id", "")),
+                run_id=run_id_val,
+                pipeline_name=data.get("pipeline_name", "databricks_dlt"),
+                status=data.get("status", "RUNNING"),
+                duration_seconds=data.get("duration_seconds"),
+                output_rows=data.get("output_rows"),
+                notebook_path=data.get("notebook_path"),
+                cluster_id=data.get("cluster_id")
+            )
+            db.add(db_run)
         await db.flush()
         saved_id = db_run.id
 
