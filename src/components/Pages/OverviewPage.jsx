@@ -8,27 +8,16 @@ import { ModelPromotionFlow } from "../Dashboard/ModelPromotionFlow";
 import { LiveActivityFeed } from "../Dashboard/LiveActivityFeed";
 import { DonutChart } from "../Charts/DonutChart";
 
-export const OverviewPage = ({ summary, liveEvents, selectedProjects = [], availableProjects = [] }) => {
+export const OverviewPage = ({ summary, liveEvents }) => {
   const s = summary || {};
   const dora = s.dora_metrics || {};
   const gatekeeper = s.gatekeeper_summary || {};
   const sec = s.security_summary || {};
 
-  const isAllSelected = selectedProjects.length === 0 || selectedProjects.length === availableProjects.length;
-
-  const filterByProject = (items) => {
-    if (!items || !Array.isArray(items)) return [];
-    return items.filter((item) => {
-      if (isAllSelected) return true;
-      if (selectedProjects.includes("__NONE__")) return false;
-      return selectedProjects.includes(item.project || "skunchoor/traffic-light-governance");
-    });
-  };
-
-  const filteredDeployments = filterByProject(s.recent_deployments || []);
-  const filteredPipelines = filterByProject(s.recent_pipelines || []);
-  const filteredModels = filterByProject(s.recent_models || []);
-  const filteredEvents = filterByProject(liveEvents || []);
+  const filteredDeployments = s.recent_deployments || [];
+  const filteredPipelines = s.recent_pipelines || [];
+  const filteredModels = s.recent_models || [];
+  const filteredEvents = liveEvents || [];
 
   return (
     <div>

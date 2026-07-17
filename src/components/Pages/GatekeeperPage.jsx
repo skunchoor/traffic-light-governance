@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchGatekeeperReports } from "../../utils/api";
 import { GatekeeperTable } from "../Tables/GatekeeperTable";
+import { DonutChart } from "../Charts/DonutChart";
 import { EmptyState } from "../Common/EmptyState";
 
 export const GatekeeperPage = ({ selectedProjects = [], availableProjects = [] }) => {
@@ -15,6 +16,16 @@ export const GatekeeperPage = ({ selectedProjects = [], availableProjects = [] }
     if (selectedProjects.includes("__NONE__")) return false;
     return selectedProjects.includes(rep.project || "skunchoor/traffic-light-governance");
   });
+
+  const chartData = useMemo(() => {
+    const counts = { GREEN: 0, YELLOW: 0, RED: 0 };
+    filteredReports.forEach((r) => {
+      if (r.traffic_light && counts[r.traffic_light] !== undefined) {
+        counts[r.traffic_light]++;
+      }
+    });
+    return counts;
+  }, [filteredReports]);
 
   return (
     <div>
@@ -66,7 +77,16 @@ export const GatekeeperPage = ({ selectedProjects = [], availableProjects = [] }
       ) : filteredReports.length === 0 ? (
         <EmptyState title="No governance reports found" description="No gatekeeper reports match the current project or traffic light filter." />
       ) : (
-        <GatekeeperTable reports={filteredReports} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div className="glass-card" style={{ padding: "1.5rem", maxWidth: "420px" }}>
+            <h3 style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.3rem" }}>PR Decision Ratio</h3>
+            <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
+              Automated governance decision distribution across selected projects
+            </p>
+            <DonutChart data={chartData} height={180} />
+          </div>
+          <GatekeeperTable reports={filteredReports} />
+        </div>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchDeployments } from "../../utils/api";
 import { DeploymentTable } from "../Tables/DeploymentTable";
+import { DeploymentChart } from "../Dashboard/DeploymentChart";
 import { EmptyState } from "../Common/EmptyState";
 
 export const DeploymentsPage = ({ selectedProjects = [], availableProjects = [] }) => {
@@ -65,7 +66,10 @@ export const DeploymentsPage = ({ selectedProjects = [], availableProjects = [] 
       ) : filteredDeployments.length === 0 ? (
         <EmptyState title="No deployments found" description="No deployments match the current project or environment filter." />
       ) : (
-        <DeploymentTable deployments={filteredDeployments} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <DeploymentChart deployments={filteredDeployments} />
+          <DeploymentTable deployments={filteredDeployments} />
+        </div>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchModels } from "../../utils/api";
 import { ModelTable } from "../Tables/ModelTable";
+import { ModelPromotionFlow } from "../Dashboard/ModelPromotionFlow";
 import { EmptyState } from "../Common/EmptyState";
 
 export const ModelsPage = ({ selectedProjects = [], availableProjects = [] }) => {
@@ -66,7 +67,10 @@ export const ModelsPage = ({ selectedProjects = [], availableProjects = [] }) =>
       ) : filteredModels.length === 0 ? (
         <EmptyState title="No model promotions found" description="No model promotions match the current project or decision filter." />
       ) : (
-        <ModelTable models={filteredModels} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <ModelPromotionFlow promotions={filteredModels} />
+          <ModelTable models={filteredModels} />
+        </div>
       )}
     </div>
   );

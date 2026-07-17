@@ -22,6 +22,7 @@ export const Layout = ({ children, activeTab, setActiveTab, selectedProjects, se
         selectedProjects={selectedProjects}
         setSelectedProjects={setSelectedProjects}
         availableProjects={availableProjects}
+        activeTab={activeTab}
       />
       <div style={{ display: "flex", flex: 1 }}>
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />

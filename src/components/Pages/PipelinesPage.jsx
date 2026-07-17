@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchPipelines } from "../../utils/api";
 import { PipelineTable } from "../Tables/PipelineTable";
+import { PipelineTimeline } from "../Dashboard/PipelineTimeline";
 import { EmptyState } from "../Common/EmptyState";
 
 export const PipelinesPage = ({ selectedProjects = [], availableProjects = [] }) => {
@@ -66,7 +67,10 @@ export const PipelinesPage = ({ selectedProjects = [], availableProjects = [] })
       ) : filteredPipelines.length === 0 ? (
         <EmptyState title="No pipeline runs found" description="No CI/CD pipeline runs match the current project or status filter." />
       ) : (
-        <PipelineTable pipelines={filteredPipelines} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <PipelineTimeline pipelines={filteredPipelines} />
+          <PipelineTable pipelines={filteredPipelines} />
+        </div>
       )}
     </div>
   );

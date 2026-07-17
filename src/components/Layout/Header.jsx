@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { StatusDot } from "../Common/StatusDot";
 
-export const Header = ({ isConnected, selectedProjects = [], setSelectedProjects, availableProjects = [] }) => {
+export const Header = ({ isConnected, selectedProjects = [], setSelectedProjects, availableProjects = [], activeTab }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -14,6 +14,12 @@ export const Header = ({ isConnected, selectedProjects = [], setSelectedProjects
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "overview") {
+      setIsDropdownOpen(false);
+    }
+  }, [activeTab]);
 
   const isAllSelected = selectedProjects.length === 0 || selectedProjects.length === availableProjects.length;
 
@@ -44,6 +50,7 @@ export const Header = ({ isConnected, selectedProjects = [], setSelectedProjects
   };
 
   const getDropdownLabel = () => {
+    if (activeTab === "overview") return `Projects: All (${availableProjects.length})`;
     if (isAllSelected) return `Projects: All (${availableProjects.length})`;
     if (selectedProjects.includes("__NONE__") || selectedProjects.length === 0) return "Projects: None";
     if (selectedProjects.length === 1) return `Project: ${selectedProjects[0].replace("skunchoor/", "")}`;
@@ -67,10 +74,24 @@ export const Header = ({ isConnected, selectedProjects = [], setSelectedProjects
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)", fontSize: "0.95rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--text-primary)", fontWeight: 600 }}>
+        <a
+          href="https://skunchoor.github.io/"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            color: "var(--text-primary)",
+            fontWeight: 600,
+            textDecoration: "none",
+            cursor: "pointer",
+            transition: "opacity 0.2s ease"
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+        >
           <span style={{ color: "#8b5cf6", fontWeight: 700, letterSpacing: "-0.05em" }}>&gt;_</span>
           <span>AI Playground</span>
-        </div>
+        </a>
         <span style={{ color: "var(--text-muted)" }}>/</span>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--text-primary)", fontWeight: 600 }}>
           <span style={{ fontSize: "1.15rem" }}>🚦</span>
@@ -81,29 +102,42 @@ export const Header = ({ isConnected, selectedProjects = [], setSelectedProjects
         {/* Multi-Select Project Dropdown */}
         <div ref={dropdownRef} style={{ position: "relative" }}>
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            onClick={() => activeTab !== "overview" && setIsDropdownOpen(!isDropdownOpen)}
+            disabled={activeTab === "overview"}
+            title={activeTab === "overview" ? "Project filtering is disabled on Overview page. Select a specific tab to filter by project." : "Filter by project"}
             style={{
-              background: isDropdownOpen ? "rgba(139, 92, 246, 0.15)" : "rgba(255, 255, 255, 0.04)",
-              border: isDropdownOpen ? "1px solid #8b5cf6" : "1px solid var(--border-card)",
+              background: activeTab === "overview"
+                ? "rgba(255, 255, 255, 0.02)"
+                : isDropdownOpen
+                  ? "rgba(139, 92, 246, 0.15)"
+                  : "rgba(255, 255, 255, 0.04)",
+              border: activeTab === "overview"
+                ? "1px solid rgba(255, 255, 255, 0.05)"
+                : isDropdownOpen
+                  ? "1px solid #8b5cf6"
+                  : "1px solid var(--border-card)",
               padding: "0.3rem 0.75rem",
               borderRadius: "6px",
               fontSize: "0.82rem",
-              color: "var(--text-primary)",
+              color: activeTab === "overview" ? "var(--text-muted)" : "var(--text-primary)",
               display: "flex",
               alignItems: "center",
               gap: "0.45rem",
-              cursor: "pointer",
+              cursor: activeTab === "overview" ? "not-allowed" : "pointer",
               fontFamily: "var(--font-mono)",
               fontWeight: 500,
+              opacity: activeTab === "overview" ? 0.6 : 1,
               transition: "all 0.2s ease"
             }}
           >
             <span>📦</span>
             <span>{getDropdownLabel()}</span>
-            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{isDropdownOpen ? "▲" : "▼"}</span>
+            {activeTab !== "overview" && (
+              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{isDropdownOpen ? "▲" : "▼"}</span>
+            )}
           </button>
 
-          {isDropdownOpen && (
+          {isDropdownOpen && activeTab !== "overview" && (
             <div
               style={{
                 position: "absolute",
