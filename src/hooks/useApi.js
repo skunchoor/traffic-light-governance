@@ -1,14 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export const useApi = (fetchFunction, dependencies = []) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchRef = useRef(fetchFunction);
+  useEffect(() => {
+    fetchRef.current = fetchFunction;
+  }, [fetchFunction]);
+
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchFunction();
+      const res = await fetchRef.current();
       setData(res);
       setError(null);
     } catch (err) {
@@ -16,11 +21,11 @@ export const useApi = (fetchFunction, dependencies = []) => {
     } finally {
       setLoading(false);
     }
-  }, [fetchFunction]);
+  }, []);
 
   useEffect(() => {
     reload();
-  }, [...dependencies, reload]);
+  }, [...dependencies]);
 
   return { data, loading, error, reload, setData };
 };

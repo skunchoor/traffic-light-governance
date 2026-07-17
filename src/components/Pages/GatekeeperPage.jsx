@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchGatekeeperReports } from "../../utils/api";
 import { GatekeeperTable } from "../Tables/GatekeeperTable";
@@ -6,7 +6,8 @@ import { EmptyState } from "../Common/EmptyState";
 
 export const GatekeeperPage = () => {
   const [lightFilter, setLightFilter] = useState("");
-  const { data: reports, loading, error, reload } = useApi(() => fetchGatekeeperReports(lightFilter), [lightFilter]);
+  const fetcher = useCallback(() => fetchGatekeeperReports(lightFilter), [lightFilter]);
+  const { data: reports, loading, error, reload } = useApi(fetcher, [lightFilter]);
 
   return (
     <div>

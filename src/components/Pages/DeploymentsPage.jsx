@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchDeployments } from "../../utils/api";
 import { DeploymentTable } from "../Tables/DeploymentTable";
@@ -6,7 +6,8 @@ import { EmptyState } from "../Common/EmptyState";
 
 export const DeploymentsPage = () => {
   const [envFilter, setEnvFilter] = useState("");
-  const { data: deployments, loading, error, reload } = useApi(() => fetchDeployments(envFilter), [envFilter]);
+  const fetcher = useCallback(() => fetchDeployments(envFilter), [envFilter]);
+  const { data: deployments, loading, error, reload } = useApi(fetcher, [envFilter]);
 
   return (
     <div>

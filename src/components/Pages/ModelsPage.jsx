@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchModels } from "../../utils/api";
 import { ModelTable } from "../Tables/ModelTable";
@@ -6,7 +6,8 @@ import { EmptyState } from "../Common/EmptyState";
 
 export const ModelsPage = () => {
   const [decisionFilter, setDecisionFilter] = useState("");
-  const { data: models, loading, error, reload } = useApi(() => fetchModels(decisionFilter), [decisionFilter]);
+  const fetcher = useCallback(() => fetchModels(decisionFilter), [decisionFilter]);
+  const { data: models, loading, error, reload } = useApi(fetcher, [decisionFilter]);
 
   return (
     <div>

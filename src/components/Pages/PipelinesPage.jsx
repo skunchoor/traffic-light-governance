@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useApi } from "../../hooks/useApi";
 import { fetchPipelines } from "../../utils/api";
 import { PipelineTable } from "../Tables/PipelineTable";
@@ -6,7 +6,8 @@ import { EmptyState } from "../Common/EmptyState";
 
 export const PipelinesPage = () => {
   const [statusFilter, setStatusFilter] = useState("");
-  const { data: pipelines, loading, error, reload } = useApi(() => fetchPipelines(statusFilter), [statusFilter]);
+  const fetcher = useCallback(() => fetchPipelines(statusFilter), [statusFilter]);
+  const { data: pipelines, loading, error, reload } = useApi(fetcher, [statusFilter]);
 
   return (
     <div>

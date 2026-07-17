@@ -18,30 +18,32 @@ export const Header = ({ isConnected }) => {
         zIndex: 100
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)", fontSize: "0.95rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--text-primary)", fontWeight: 600 }}>
+          <span style={{ color: "#8b5cf6", fontWeight: 700, letterSpacing: "-0.05em" }}>&gt;_</span>
+          <span>AI Playground</span>
+        </div>
+        <span style={{ color: "var(--text-muted)" }}>/</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--text-primary)", fontWeight: 600 }}>
+          <span style={{ fontSize: "1.15rem" }}>🚦</span>
+          <span>Traffic Light Governance</span>
+        </div>
+        <span style={{ color: "var(--border-card)", margin: "0 0.3rem" }}>|</span>
         <div
           style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "10px",
-            background: "linear-gradient(135deg, #1e1e2d 0%, #2d2d44 100%)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid var(--border-card)",
+            padding: "0.25rem 0.65rem",
+            borderRadius: "6px",
+            fontSize: "0.82rem",
+            color: "var(--text-secondary)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.2rem",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+            gap: "0.35rem"
           }}
         >
-          🚦
-        </div>
-        <div>
-          <h1 style={{ fontSize: "1.1rem", fontWeight: 600, letterSpacing: "-0.01em" }}>
-            Traffic Light Governance
-          </h1>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", display: "block" }}>
-            Real-Time MLOps & CI/CD Observability
-          </span>
+          <span style={{ color: "var(--text-muted)" }}>obs_id:</span>
+          <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>realtime_mlops</span>
         </div>
       </div>
 
