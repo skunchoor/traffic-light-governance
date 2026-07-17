@@ -1,18 +1,30 @@
 import os
+import re
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from api.config import settings
 
-# If DATABASE_URL starts with libsql:// or sqlite://, adjust for async SQLAlchemy
 db_url = settings.DATABASE_URL
-if db_url.startswith("libsql://") or db_url.startswith("https://"):
-    # If on Vercel and libsql URL is given without custom driver, safely fallback or use /tmp cache
-    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
-        db_url = "sqlite+aiosqlite:////tmp/backend_data.db"
-    else:
-        db_url = db_url.replace("libsql://", "sqlite+aiosqlite:///")
+connect_args = {}
+
+# Normalize PostgreSQL schemes for asyncpg (Neon, Supabase, Vercel Postgres)
+if db_url.startswith("postgres://") or db_url.startswith("postgresql://"):
+    if not db_url.startswith("postgresql+asyncpg://"):
+        db_url = re.sub(r"^postgres(?:ql)?://", "postgresql+asyncpg://", db_url)
+    # Strip ?sslmode=... or &sslmode=... which asyncpg doesn't accept in URL query string
+    if "sslmode=" in db_url or "ssl=" in db_url:
+        db_url = re.sub(r"[?&]ssl(?:mode)?=[^&]+", "", db_url)
+        db_url = db_url.rstrip("?&")
+        if "?" not in db_url and "&" in db_url:
+            db_url = db_url.replace("&", "?", 1)
+    connect_args = {"ssl": "require"}
+
+# Normalize SQLite schemes
 elif db_url.startswith("sqlite://") and not db_url.startswith("sqlite+aiosqlite://"):
     db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
+    connect_args = {"check_same_thread": False}
+elif "sqlite" in db_url:
+    connect_args = {"check_same_thread": False}
 
 # Ensure directory exists for local SQLite
 if ":///" in db_url and "aiosqlite" in db_url:
@@ -28,7 +40,7 @@ if ":///" in db_url and "aiosqlite" in db_url:
 engine = create_async_engine(
     db_url,
     echo=settings.DEBUG,
-    connect_args={"check_same_thread": False} if "sqlite" in db_url else {}
+    connect_args=connect_args
 )
 
 AsyncSessionLocal = async_sessionmaker(

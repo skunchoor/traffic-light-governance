@@ -9,3 +9,4 @@ pytest-asyncio>=0.23.0
 httpx>=0.27.0
 PyGithub>=2.1.0
 junitparser>=3.1.0
+asyncpg>=0.29.0
